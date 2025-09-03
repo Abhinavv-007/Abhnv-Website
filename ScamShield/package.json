@@ -1,0 +1,12 @@
+{
+    "name": "scamshield-server",
+    "version": "1.0.0",
+    "description": "Serverless backend for ScamShield",
+    "type": "module",
+    "engines": {
+      "node": "22.x"
+    },
+    "dependencies": {
+      "node-fetch": "^2.7.0"
+    }
+  }

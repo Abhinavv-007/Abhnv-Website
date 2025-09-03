@@ -1,0 +1,674 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>MindMate - Your AI Journal</title>
+
+    <!-- 1. Tailwind CSS for styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        // Configure Tailwind to use the 'class' strategy for dark mode
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    animation: {
+                        'fade-in': 'fade-in 0.6s ease-out forwards',
+                        'fade-in-up': 'fade-in-up 0.5s ease-out forwards',
+                        'pulse-slow': 'pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                    },
+                    keyframes: {
+                        'fade-in': {
+                            from: { opacity: '0', transform: 'translateY(10px)' },
+                            to: { opacity: '1', transform: 'translateY(0)' },
+                        },
+                        'fade-in-up': {
+                            from: { opacity: '0', transform: 'translateY(20px)' },
+                            to: { opacity: '1', transform: 'translateY(0)' },
+                        },
+                    }
+                }
+            }
+        }
+    </script>
+
+    <!-- 2. React Libraries -->
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+
+    <!-- 3. Babel to compile JSX in the browser -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
+    <!-- 4. Chart.js for analytics -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+        /* Basic font styling */
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        /* For custom scrollbars in the chat window */
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 3px;
+        }
+        .dark .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #475569;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 dark:bg-slate-900 text-slate-800 dark:text-slate-200 transition-colors duration-500">
+    
+    <!-- This is where our React app will be rendered -->
+    <div id="root"></div>
+
+    <!-- 5. Our React Application Code -->
+    <script type="text/babel">
+        const { useState, useEffect, useRef, useMemo } = React;
+
+        // --- Helper Functions, Constants & SVGs ---
+        
+        const MOODS = [
+            { emoji: '😊', label: 'Happy', color: 'bg-green-400', chartColor: '#4ade80' },
+            { emoji: '🙂', label: 'Okay', color: 'bg-yellow-400', chartColor: '#facc15' },
+            { emoji: '😐', label: 'Neutral', color: 'bg-gray-400', chartColor: '#9ca3af' },
+            { emoji: '😕', label: 'Confused', color: 'bg-purple-400', chartColor: '#a78bfa' },
+            { emoji: '😔', label: 'Sad', color: 'bg-blue-400', chartColor: '#60a5fa' },
+            { emoji: '😠', label: 'Angry', color: 'bg-red-400', chartColor: '#f87171' },
+        ];
+        
+        const DEFAULT_AFFIRMATIONS = [
+            "I am capable of handling whatever comes my way.",
+            "I choose to be happy and to love myself today.",
+            "My feelings are valid, and I allow myself to feel them.",
+            "I am resilient and can overcome challenges.",
+            "I am worthy of peace and inner calm.",
+        ];
+
+        // --- Icon Components (using inline SVG for portability) ---
+        const SunIcon = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg>;
+        const MoonIcon = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>;
+        const SendIcon = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg>;
+        const LinkedinLogoIcon = () => (
+            <svg role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 fill-current">
+                <title>LinkedIn</title>
+                <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 0 1-2.063-2.065 2.064 2.064 0 1 1 2.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.225 0z"></path>
+            </svg>
+        );
+        const EditIcon = () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 3a2.85 2.85 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/><path d="m15 5 4 4"/></svg>;
+
+        // --- Main Components ---
+
+        const Header = ({ theme, setTheme }) => {
+            const toggleTheme = () => {
+                const newTheme = theme === 'light' ? 'dark' : 'light';
+                setTheme(newTheme);
+            };
+
+            useEffect(() => {
+                if (theme === 'dark') {
+                    document.documentElement.classList.add('dark');
+                } else {
+                    document.documentElement.classList.remove('dark');
+                }
+                localStorage.setItem('theme', theme);
+            }, [theme]);
+
+            return (
+                <header className="p-4 flex justify-between items-center sticky top-0 z-20 bg-gray-50/80 dark:bg-slate-900/80 backdrop-blur-sm border-b border-slate-200 dark:border-slate-800">
+                    <h1 className="text-2xl font-bold">
+                        Mind<span className="text-teal-500">Mate</span>
+                    </h1>
+                    <button onClick={toggleTheme} className="p-2 rounded-full text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-50 dark:focus:ring-offset-slate-900 focus:ring-teal-500">
+                        {theme === 'light' ? <MoonIcon /> : <SunIcon />}
+                    </button>
+                </header>
+            );
+        };
+        
+        const Footer = () => (
+            <footer className="text-center p-4 mt-auto text-sm text-slate-500 dark:text-slate-400 border-t border-slate-200 dark:border-slate-800 flex-shrink-0">
+                <p>Crafted with ❤️ by Abhinav</p>
+                <a href="https://www.linkedin.com/in/abhnv07/" target="_blank" rel="noopener noreferrer" className="inline-block mt-2 text-slate-400 hover:text-blue-600 transition-colors" aria-label="Abhinav's LinkedIn Profile">
+                    <LinkedinLogoIcon />
+                </a>
+            </footer>
+        );
+
+        const LandingPage = ({ onStart }) => (
+            <div className="flex flex-col items-center justify-center text-center p-8 flex-grow animate-fade-in">
+                <h2 className="text-4xl md:text-5xl font-bold mb-4">Your Safe Space to Reflect.</h2>
+                <p className="text-lg text-slate-600 dark:text-slate-300 max-w-2xl mb-8">MindMate is your private AI companion for journaling. Understand your feelings, discover patterns, and find moments of calm.</p>
+                <button
+                    onClick={onStart}
+                    className="bg-teal-500 text-white font-bold py-3 px-8 rounded-full hover:bg-teal-600 transition-all duration-300 transform hover:scale-105 shadow-lg shadow-teal-500/20 hover:shadow-xl hover:shadow-teal-500/30"
+                >
+                    Start Journaling
+                </button>
+                <p className="mt-8 text-sm text-slate-500 dark:text-slate-400">🔒 Your data is saved locally on your device. It's 100% private.</p>
+            </div>
+        );
+        
+        const StatCard = ({ title, value, icon, subtext }) => (
+             <div className="p-4 rounded-2xl bg-white/50 dark:bg-slate-800/50 backdrop-blur-md shadow-md text-center flex flex-col items-center justify-center">
+                {icon}
+                <p className="text-3xl font-bold text-teal-500 my-1">{value}</p>
+                <h3 className="font-semibold text-slate-700 dark:text-slate-200 text-sm">{title}</h3>
+                {subtext && <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">{subtext}</p>}
+            </div>
+        );
+        
+        const AffirmationCard = ({ affirmations, openAffirmationModal }) => {
+            const [affirmation, setAffirmation] = useState('');
+            
+            useEffect(() => {
+                const today = new Date().toDateString();
+                const lastDate = localStorage.getItem('affirmationDate');
+                let dailyAffirmation;
+
+                if (today !== lastDate) {
+                    dailyAffirmation = affirmations[Math.floor(Math.random() * affirmations.length)];
+                    localStorage.setItem('dailyAffirmation', dailyAffirmation);
+                    localStorage.setItem('affirmationDate', today);
+                } else {
+                    dailyAffirmation = localStorage.getItem('dailyAffirmation') || affirmations[0];
+                }
+                setAffirmation(dailyAffirmation);
+            }, [affirmations]);
+            
+            return (
+                <div className="p-5 rounded-2xl bg-white/50 dark:bg-slate-800/50 backdrop-blur-md shadow-md text-center relative">
+                     <button onClick={openAffirmationModal} className="absolute top-2 right-2 p-1.5 rounded-full hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors">
+                        <EditIcon/>
+                     </button>
+                    <h3 className="font-bold text-slate-700 dark:text-slate-200 mb-2">✨ Daily Affirmation</h3>
+                    <p className="text-slate-600 dark:text-slate-300 italic">"{affirmation}"</p>
+                </div>
+            );
+        };
+        
+        const MoodHistoryChart = ({ entries, theme }) => {
+            const chartRef = useRef(null);
+            const chartInstance = useRef(null);
+
+            useEffect(() => {
+                if (chartRef.current && entries.length > 0) {
+                    const ctx = chartRef.current.getContext('2d');
+                    
+                    const moodCounts = MOODS.reduce((acc, mood) => {
+                        acc[mood.label] = 0;
+                        return acc;
+                    }, {});
+                    
+                    entries.forEach(entry => {
+                        if (entry.type === 'user' && entry.mood) {
+                            moodCounts[entry.mood.label]++;
+                        }
+                    });
+
+                    if (chartInstance.current) {
+                        chartInstance.current.destroy();
+                    }
+
+                    chartInstance.current = new Chart(ctx, {
+                        type: 'doughnut',
+                        data: {
+                            labels: MOODS.map(m => m.label),
+                            datasets: [{
+                                label: 'Moods',
+                                data: MOODS.map(m => moodCounts[m.label]),
+                                backgroundColor: MOODS.map(m => m.chartColor),
+                                borderWidth: 0,
+                                hoverOffset: 8
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            plugins: {
+                                legend: {
+                                    position: 'bottom',
+                                    labels: {
+                                        color: theme === 'dark' ? '#cbd5e1' : '#475569',
+                                        boxWidth: 12,
+                                        padding: 15,
+                                        font: {
+                                            family: "'Inter', sans-serif"
+                                        }
+                                    }
+                                },
+                                title: {
+                                    display: true,
+                                    text: 'Your Mood Distribution',
+                                    color: theme === 'dark' ? '#f1f5f9' : '#1e293b',
+                                    font: { size: 16, weight: '600', family: "'Inter', sans-serif" }
+                                }
+                            },
+                            cutout: '60%'
+                        }
+                    });
+                }
+            }, [entries, theme]);
+            
+            if(entries.filter(e => e.type === 'user').length === 0) return (
+                 <div className="p-6 rounded-2xl bg-white/50 dark:bg-slate-800/50 backdrop-blur-md shadow-md text-center">
+                    <h3 className="font-bold text-slate-700 dark:text-slate-200 mb-2">Mood Chart</h3>
+                    <p className="text-sm text-slate-500 dark:text-slate-400">Log a mood to see your chart!</p>
+                 </div>
+            );
+
+            return (
+                <div className="p-4 rounded-2xl bg-white/50 dark:bg-slate-800/50 backdrop-blur-md shadow-md">
+                   <div style={{height: '300px'}}>
+                      <canvas ref={chartRef}></canvas>
+                   </div>
+                </div>
+            );
+        };
+
+        const JournalEntry = ({ entry }) => {
+            const { type, text, mood, aiResponse, timestamp } = entry;
+            const date = new Date(timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+            if (type === 'user') {
+                return (
+                    <div className="flex justify-end mb-4 animate-fade-in-up">
+                        <div className="mr-2 py-3 px-4 bg-teal-500 text-white rounded-2xl rounded-br-none max-w-lg shadow-md">
+                            <p className="font-bold mb-1">You said: {mood?.emoji}</p>
+                            <p>{text}</p>
+                            <p className="text-xs text-teal-100 mt-2 text-right">{date}</p>
+                        </div>
+                    </div>
+                );
+            }
+            
+            if (type === 'dream') {
+                return (
+                    <div className="flex justify-end mb-4 animate-fade-in-up">
+                        <div className="mr-2 py-3 px-4 bg-purple-500 text-white rounded-2xl rounded-br-none max-w-lg shadow-md">
+                            <p className="font-bold mb-1">You shared a dream: 🌙</p>
+                            <p className="italic">"{text}"</p>
+                            <p className="text-xs text-purple-100 mt-2 text-right">{date}</p>
+                        </div>
+                    </div>
+                );
+            }
+            
+            if (type === 'ai_intro') {
+                return (
+                     <div className="flex justify-start mb-4 animate-fade-in-up">
+                        <div className="ml-2 py-3 px-4 bg-white dark:bg-slate-700 rounded-2xl rounded-bl-none max-w-lg shadow-md">
+                            <p className="font-bold text-teal-600 dark:text-teal-400 mb-2">MindMate says:</p>
+                            <p>{text}</p>
+                        </div>
+                    </div>
+                );
+            }
+
+            return (
+                <div className="flex justify-start mb-4 animate-fade-in-up">
+                    <div className="ml-2 py-3 px-4 bg-white dark:bg-slate-700 rounded-2xl rounded-bl-none max-w-lg shadow-md">
+                        <p className="font-bold text-teal-600 dark:text-teal-400 mb-2">MindMate says:</p>
+                        <p className="mb-2">{aiResponse.empatheticResponse}</p>
+                        {aiResponse.suggestion && (
+                            <div className="p-3 mt-3 rounded-lg bg-slate-100 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-600">
+                                <p className="font-semibold text-sm text-slate-700 dark:text-slate-200">Suggested Action:</p>
+                                <p className="text-sm text-slate-600 dark:text-slate-300">{aiResponse.suggestion}</p>
+                            </div>
+                        )}
+                         <p className="text-xs text-slate-400 mt-2 text-right">{date}</p>
+                    </div>
+                </div>
+            );
+        };
+
+        const JournalPage = ({ entries, setEntries, affirmations, setAffirmations, theme }) => {
+            const [input, setInput] = useState('');
+            const [selectedMood, setSelectedMood] = useState(null);
+            const [isLoading, setIsLoading] = useState(false);
+            const [journalMode, setJournalMode] = useState('mood'); // 'mood' or 'dream'
+            const [isAffirmationModalOpen, setAffirmationModalOpen] = useState(false);
+            const chatEndRef = useRef(null);
+
+            useEffect(() => {
+                chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+            }, [entries]);
+            
+            useEffect(() => {
+                if(entries.length === 0) {
+                    setEntries([{ type: 'ai_intro', text: 'Welcome to your safe space. How are you feeling today? Share your thoughts with me.', timestamp: new Date().toISOString() }]);
+                }
+            }, []);
+
+            const handleJournalSubmit = async (e) => {
+                e.preventDefault();
+                if (isLoading || !input.trim() || (journalMode === 'mood' && !selectedMood)) {
+                    return;
+                }
+                setIsLoading(true);
+
+                if (journalMode === 'dream') {
+                    handleDreamInterpretation();
+                    return;
+                }
+
+                const userEntry = {
+                    type: 'user', text: input, mood: selectedMood, timestamp: new Date().toISOString(),
+                };
+
+                const prompt = `Analyze the following journal entry and the user's selected mood.
+                User's mood: ${selectedMood.emoji} (${selectedMood.label})
+                Journal entry: "${input}"
+                Provide a JSON object with: "empatheticResponse" (a warm, supportive, and brief reflection, max 3 sentences), "mentalHealthScore" (1-100, based on sentiment), and a "suggestion" (a simple, actionable, and positive step).`;
+
+                try {
+                    const payload = { contents: [{ parts: [{ text: prompt }] }], generationConfig: { responseMimeType: "application/json" } };
+                    const response = await fetch('/api/mindmate', {
+                        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
+                    });
+                    if (!response.ok) throw new Error(`API Error: ${response.statusText}`);
+                    const result = await response.json();
+                    const aiResponse = JSON.parse(result.candidates[0].content.parts[0].text);
+                    const aiEntry = { type: 'ai', aiResponse, timestamp: new Date().toISOString() };
+                    setEntries(prev => [...prev, { ...userEntry, aiResponse }, aiEntry]);
+                } catch (error) {
+                    console.error("Error with Gemini API:", error);
+                    const errorEntry = { type: 'ai', aiResponse: { empatheticResponse: "I'm having a little trouble connecting right now. Let's try again in a moment.", suggestion: null }, timestamp: new Date().toISOString() };
+                    setEntries(prev => [...prev, userEntry, errorEntry]);
+                } finally {
+                    setInput(''); setSelectedMood(null); setIsLoading(false);
+                }
+            };
+            
+            const handleDreamInterpretation = async () => {
+                const dreamEntry = { type: 'dream', text: input, timestamp: new Date().toISOString() };
+                const prompt = `A user shared a dream. Provide a short, gentle, and symbolic interpretation (max 3 sentences). Avoid making definitive claims. Frame it as exploring possibilities. Dream: "${input}"
+                Provide a JSON object with "empatheticResponse" and a "suggestion" for reflection based on common dream symbols.`;
+                
+                try {
+                    const payload = { contents: [{ parts: [{ text: prompt }] }], generationConfig: { responseMimeType: "application/json" } };
+                    const response = await fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+                    if (!response.ok) throw new Error(`API Error: ${response.statusText}`);
+                    const result = await response.json();
+                    const aiResponse = JSON.parse(result.candidates[0].content.parts[0].text);
+                    const aiEntry = { type: 'ai', aiResponse, timestamp: new Date().toISOString() };
+                    setEntries(prev => [...prev, dreamEntry, aiEntry]);
+                } catch (error) {
+                    console.error("Dream interpretation error:", error);
+                    const errorEntry = { type: 'ai', aiResponse: { empatheticResponse: "I'm having a little trouble interpreting dreams right now. Let's try again later.", suggestion: null }, timestamp: new Date().toISOString() };
+                    setEntries(prev => [...prev, dreamEntry, errorEntry]);
+                } finally {
+                    setInput(''); setIsLoading(false);
+                }
+            };
+            
+            // --- Analytics Calculations ---
+            const { streak, lastScore, weeklyInsight } = useMemo(() => {
+                const userEntries = entries.filter(e => e.type === 'user');
+                if (userEntries.length === 0) return { streak: 0, lastScore: null, weeklyInsight: "Start journaling to see your weekly insights." };
+                
+                // Streak
+                let currentStreak = 0;
+                if (userEntries.length > 0) {
+                    const uniqueDays = [...new Set(userEntries.map(e => new Date(e.timestamp).toDateString()))];
+                    uniqueDays.sort((a,b) => new Date(b) - new Date(a));
+                    
+                    if (uniqueDays.length > 0) {
+                        const today = new Date();
+                        const yesterday = new Date();
+                        yesterday.setDate(today.getDate() - 1);
+                        
+                        if (new Date(uniqueDays[0]).toDateString() === today.toDateString() || new Date(uniqueDays[0]).toDateString() === yesterday.toDateString()) {
+                            currentStreak = 1;
+                            for (let i = 0; i < uniqueDays.length - 1; i++) {
+                                const day1 = new Date(uniqueDays[i]);
+                                const day2 = new Date(uniqueDays[i+1]);
+                                const diffTime = day1 - day2;
+                                const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                                if (diffDays === 1) {
+                                    currentStreak++;
+                                } else {
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                }
+                
+                // Last Score
+                const lastUserEntryWithScore = [...userEntries].reverse().find(e => e.aiResponse && e.aiResponse.mentalHealthScore);
+                const score = lastUserEntryWithScore ? lastUserEntryWithScore.aiResponse.mentalHealthScore : null;
+
+                // Weekly Insight
+                const oneWeekAgo = new Date();
+                oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+                const recentEntries = userEntries.filter(e => new Date(e.timestamp) > oneWeekAgo);
+                let insight = "Not enough data from this week for an insight.";
+                if (recentEntries.length >= 3) {
+                     const moodCounts = recentEntries.reduce((acc, entry) => {
+                        acc[entry.mood.label] = (acc[entry.mood.label] || 0) + 1;
+                        return acc;
+                    }, {});
+                    const mostFrequentMood = Object.keys(moodCounts).reduce((a, b) => moodCounts[a] > moodCounts[b] ? a : b);
+                    insight = `This week, your most frequent mood has been ${mostFrequentMood.toLowerCase()}.`;
+                }
+
+                return { streak: currentStreak, lastScore: score, weeklyInsight: insight };
+            }, [entries]);
+            
+            const handleExport = (format) => {
+                 let content = "";
+                 let filename = "";
+                 let mimeType = "";
+
+                 if (format === 'md') {
+                    content = "# MindMate Journal\n\n";
+                    entries.forEach(entry => {
+                        if (entry.type === 'user') content += `## Entry: ${new Date(entry.timestamp).toLocaleString()}\n**Mood:** ${entry.mood.emoji} ${entry.mood.label}\n\n${entry.text}\n\n**MindMate's Reflection:** ${entry.aiResponse.empatheticResponse}\n**Suggestion:** ${entry.aiResponse.suggestion}\n\n---\n\n`;
+                        else if (entry.type === 'dream') content += `## Dream: ${new Date(entry.timestamp).toLocaleString()}\n\n*${entry.text}*\n\n---\n\n`;
+                    });
+                    filename = "MindMate_Journal.md";
+                    mimeType = "text/markdown";
+                 } else if (format === 'txt') {
+                    content = "MindMate Journal\n\n";
+                    entries.forEach(entry => {
+                         if (entry.type === 'user') content += `[Entry: ${new Date(entry.timestamp).toLocaleString()}]\nMood: ${entry.mood.emoji} ${entry.mood.label}\n\nYou said: ${entry.text}\nMindMate reflected: ${entry.aiResponse.empatheticResponse}\nSuggestion: ${entry.aiResponse.suggestion}\n\n--------------------------------------\n\n`;
+                         else if (entry.type === 'dream') content += `[Dream: ${new Date(entry.timestamp).toLocaleString()}]\n\nYou dreamt: ${entry.text}\nMindMate reflected: ${entry.aiResponse.empatheticResponse}\n\n--------------------------------------\n\n`;
+                    });
+                    filename = "MindMate_Journal.txt";
+                    mimeType = "text/plain";
+                 }
+
+                const blob = new Blob([content], { type: mimeType });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url; a.download = filename; a.click();
+                URL.revokeObjectURL(url);
+            };
+
+            return (
+                <div className="flex flex-row h-full gap-6 p-4 md:p-6">
+                     {isAffirmationModalOpen && (
+                        <AffirmationModal 
+                            affirmations={affirmations} 
+                            setAffirmations={setAffirmations} 
+                            closeModal={() => setAffirmationModalOpen(false)} 
+                        />
+                    )}
+                    <div className="w-2/5 xl:w-1/3 flex-shrink-0 space-y-6 animate-fade-in overflow-y-auto custom-scrollbar pr-2">
+                        <div className="grid grid-cols-2 gap-4">
+                            <StatCard title="Journal Streak" value={`${streak} Day${streak !== 1 ? 's' : ''}`} icon={<span className="text-2xl">🔥</span>} />
+                            {lastScore !== null ? (
+                               <StatCard title="Last Score" value={`${lastScore}/100`} icon={<span className="text-2xl">💖</span>} subtext="Based on your entry."/>
+                            ) : (
+                                <StatCard title="Last Score" value="N/A" icon={<span className="text-2xl">💖</span>} subtext="Log an entry first."/>
+                            )}
+                        </div>
+                        <div className="p-4 rounded-2xl bg-white/50 dark:bg-slate-800/50 backdrop-blur-md shadow-md text-center">
+                            <h3 className="font-bold text-slate-700 dark:text-slate-200 mb-2">Weekly Insight</h3>
+                            <p className="text-sm text-slate-600 dark:text-slate-300">{weeklyInsight}</p>
+                        </div>
+                        <AffirmationCard affirmations={affirmations} openAffirmationModal={() => setAffirmationModalOpen(true)} />
+                        <MoodHistoryChart entries={entries} theme={theme} />
+                        <div className="p-4 rounded-2xl bg-white/50 dark:bg-slate-800/50 backdrop-blur-md shadow-md">
+                           <h3 className="font-bold text-slate-700 dark:text-slate-200 mb-3 text-center">Export Options</h3>
+                           <div className="flex gap-2">
+                               <button onClick={() => handleExport('md')} className="w-full text-sm bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200 font-semibold py-2 px-3 rounded-lg hover:bg-slate-300 dark:hover:bg-slate-600 transition-colors">
+                                  Export .md
+                               </button>
+                               <button onClick={() => handleExport('txt')} className="w-full text-sm bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200 font-semibold py-2 px-3 rounded-lg hover:bg-slate-300 dark:hover:bg-slate-600 transition-colors">
+                                  Export .txt
+                               </button>
+                           </div>
+                        </div>
+                    </div>
+                    <div className="w-3/5 xl:w-2/3 flex flex-col bg-white/60 dark:bg-slate-800/60 backdrop-blur-md rounded-2xl shadow-lg overflow-hidden animate-fade-in" style={{animationDelay: '150ms'}}>
+                        <div className="flex-grow p-6 overflow-y-auto custom-scrollbar">
+                            {entries.map((entry, index) => <JournalEntry key={index} entry={entry} />)}
+                            {isLoading && (
+                                 <div className="flex justify-start mb-4">
+                                     <div className="ml-2 py-3 px-4 bg-white dark:bg-slate-700 rounded-2xl rounded-bl-none max-w-lg shadow-md">
+                                         <div className="flex items-center space-x-2 text-slate-500">
+                                             <div className="w-2 h-2 bg-slate-400 rounded-full animate-pulse" style={{animationDelay: '0s'}}></div>
+                                             <div className="w-2 h-2 bg-slate-400 rounded-full animate-pulse" style={{animationDelay: '0.2s'}}></div>
+                                             <div className="w-2 h-2 bg-slate-400 rounded-full animate-pulse" style={{animationDelay: '0.4s'}}></div>
+                                         </div>
+                                     </div>
+                                 </div>
+                            )}
+                            <div ref={chatEndRef}></div>
+                        </div>
+                        <div className="p-4 border-t border-slate-200 dark:border-slate-700 bg-white/50 dark:bg-slate-800/50">
+                            <div className="flex gap-2 mb-3">
+                                <button onClick={() => setJournalMode('mood')} className={`w-full text-sm font-semibold p-2 rounded-lg transition-colors ${journalMode === 'mood' ? 'bg-teal-500 text-white shadow' : 'bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600'}`}>📝 Mood Journal</button>
+                                <button onClick={() => setJournalMode('dream')} className={`w-full text-sm font-semibold p-2 rounded-lg transition-colors ${journalMode === 'dream' ? 'bg-purple-500 text-white shadow' : 'bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600'}`}>🌙 Interpret Dream</button>
+                            </div>
+                            <form onSubmit={handleJournalSubmit}>
+                                {journalMode === 'mood' && (
+                                    <div className="mb-3 animate-fade-in">
+                                        <p className="text-sm font-medium text-center mb-2">How are you feeling?</p>
+                                        <div className="flex justify-around bg-slate-100 dark:bg-slate-900/50 p-2 rounded-xl">
+                                            {MOODS.map(mood => (
+                                                <button key={mood.label} type="button" onClick={() => setSelectedMood(mood)} className={`p-2 text-3xl rounded-lg transition-all duration-200 transform ${selectedMood?.label === mood.label ? 'bg-teal-200 dark:bg-teal-700 scale-125' : 'hover:scale-110 opacity-70 hover:opacity-100'}`}>
+                                                    {mood.emoji}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+                                <div className="flex items-center space-x-2">
+                                    <textarea value={input} onChange={(e) => setInput(e.target.value)} placeholder={journalMode === 'mood' ? "What's on your mind?" : "Describe your dream..."} className="w-full p-3 bg-slate-100 dark:bg-slate-900/50 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500 resize-none" rows="2" />
+                                    <button type="submit" disabled={isLoading || !input.trim()} className="bg-teal-500 text-white p-3 rounded-lg hover:bg-teal-600 disabled:bg-slate-400 disabled:cursor-not-allowed transition-colors transform hover:scale-105">
+                                        <SendIcon/>
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+        
+        const AffirmationModal = ({ affirmations, setAffirmations, closeModal }) => {
+            const [newAffirmation, setNewAffirmation] = useState('');
+
+            const addAffirmation = (e) => {
+                e.preventDefault();
+                if (newAffirmation && !affirmations.includes(newAffirmation)) {
+                    setAffirmations([...affirmations, newAffirmation]);
+                    setNewAffirmation('');
+                }
+            };
+            
+            const removeAffirmation = (affirmationToRemove) => {
+                // Prevent deleting all default affirmations
+                const customAffirmations = affirmations.filter(a => !DEFAULT_AFFIRMATIONS.includes(a));
+                if (customAffirmations.length > 0 || !DEFAULT_AFFIRMATIONS.includes(affirmationToRemove)) {
+                    setAffirmations(affirmations.filter(a => a !== affirmationToRemove));
+                }
+            };
+
+            return (
+                <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fade-in">
+                    <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-xl w-full max-w-md p-6 animate-fade-in-up">
+                        <h2 className="text-xl font-bold mb-4">Manage Affirmations</h2>
+                        <div className="space-y-2 max-h-60 overflow-y-auto pr-2 custom-scrollbar">
+                           {affirmations.map((aff, index) => (
+                               <div key={index} className="flex items-center justify-between bg-slate-100 dark:bg-slate-700 p-2 rounded-lg text-sm">
+                                   <p>{aff}</p>
+                                   <button onClick={() => removeAffirmation(aff)} className="text-red-500 hover:text-red-700 p-1">
+                                       &times;
+                                   </button>
+                               </div>
+                           ))}
+                        </div>
+                        <form onSubmit={addAffirmation} className="mt-4 flex gap-2">
+                            <input 
+                                type="text" 
+                                value={newAffirmation} 
+                                onChange={(e) => setNewAffirmation(e.target.value)}
+                                placeholder="Add a new affirmation"
+                                className="w-full p-2 bg-slate-100 dark:bg-slate-900/50 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+                            />
+                            <button type="submit" className="bg-teal-500 text-white px-4 rounded-lg hover:bg-teal-600 font-semibold">Add</button>
+                        </form>
+                        <button onClick={closeModal} className="mt-6 w-full bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold py-2 px-4 rounded-lg hover:bg-slate-300 dark:hover:bg-slate-600 transition-colors">
+                            Close
+                        </button>
+                    </div>
+                </div>
+            );
+        };
+
+        // --- Main App Component ---
+        const App = () => {
+            const [theme, setTheme] = useState(() => localStorage.getItem('theme') || 'light');
+            const [view, setView] = useState('landing'); // 'landing' or 'journal'
+            
+            const [entries, setEntries] = useState(() => {
+                const savedEntries = localStorage.getItem('mindmate_entries');
+                return savedEntries ? JSON.parse(savedEntries) : [];
+            });
+
+            const [affirmations, setAffirmations] = useState(() => {
+                const savedAffirmations = localStorage.getItem('mindmate_affirmations');
+                return savedAffirmations ? JSON.parse(savedAffirmations) : DEFAULT_AFFIRMATIONS;
+            });
+
+            useEffect(() => {
+                localStorage.setItem('mindmate_entries', JSON.stringify(entries));
+            }, [entries]);
+
+            useEffect(() => {
+                localStorage.setItem('mindmate_affirmations', JSON.stringify(affirmations));
+            }, [affirmations]);
+
+            return (
+                <div className="h-screen flex flex-col overflow-hidden">
+                    <Header theme={theme} setTheme={setTheme} />
+                    <main className="flex-grow flex flex-col bg-gradient-to-br from-rose-50 via-purple-50 to-blue-50 dark:from-slate-900 dark:to-gray-900 overflow-hidden">
+                        {view === 'landing' && <LandingPage onStart={() => setView('journal')} />}
+                        {view === 'journal' && <JournalPage entries={entries} setEntries={setEntries} affirmations={affirmations} setAffirmations={setAffirmations} theme={theme} />}
+                    </main>
+                    <Footer />
+                </div>
+            );
+        }
+
+        // 6. Render the App to the 'root' div
+        const container = document.getElementById('root');
+        const root = ReactDOM.createRoot(container);
+        root.render(<App />);
+
+    </script>
+</body>
+</html>
+

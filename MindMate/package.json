@@ -1,0 +1,12 @@
+{
+    "name": "mindmate-server",
+    "version": "1.0.0",
+    "description": "Serverless backend for MindMate",
+    "type": "module",
+    "engines": {
+      "node": "22.x"
+    },
+    "dependencies": {
+      "node-fetch": "^2.7.0"
+    }
+  }
