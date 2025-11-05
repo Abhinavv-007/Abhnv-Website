@@ -782,11 +782,13 @@
                 setToast({ show: false, message: '' });
             };
 
-            const handleCategorySelect = (categoryTitle) => {
+const handleCategorySelect = (categoryTitle) => {
                 setView('chat');
 
+                // Extract the plain text topic
                 const topic = categoryTitle.split(' ').slice(1).join(' ');
 
+                // 1. Generate the bot's new greeting based on language
                 let greetingText = '';
                 if (language === 'hi-IN') {
                     greetingText = `नमस्ते! मैं ${topic} के बारे में आपकी मदद कर सकता हूँ। आप क्या जानना चाहेंगे?`;
@@ -794,15 +796,21 @@
                     greetingText = `Hi! I can help you with ${topic}. What would you like to know?`;
                 }
 
+                // 2. Get the initial messages
                 const initialBotMessage = getInitialMessage();
                 const categoryGreetingMessage = { role: 'model', text: greetingText };
 
+                // 3. Set what the user SEES in the chat window
                 setMessages([initialBotMessage, categoryGreetingMessage]);
                 
+                // 4. Set the API chat history to be a VALID, alternating history
                 chatHistoryRef.current = [
                     { role: 'user', parts: [{ text: "Initial Greeting" }] }, 
                     { role: 'model', parts: [{ text: initialBotMessage.text }] },
-                    { role: 'model', parts: [{ text: `The user has selected the topic: ${topic}. I have greeted them accordingly and will now wait for their question.` }] }
+                    // This is the new, "virtual" user message that keeps the roles alternating
+                    { role: 'user', parts: [{ text: `I have a question about ${topic}.` }] },
+                    // This is the bot's response that the user sees
+                    { role: 'model', parts: [{ text: categoryGreetingMessage.text }] }
                 ];
             };
             
