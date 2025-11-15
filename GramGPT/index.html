@@ -1,0 +1,1210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>GramGPT</title>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    animation: {
+                        'fade-up': 'fadeUp 0.6s ease-out forwards',
+                        'scale-in': 'scaleIn 0.5s ease-out forwards',
+                        'glow-pulse': 'glowPulse 2s ease-in-out infinite',
+                        'orb-drift': 'orbDrift 20s ease-in-out infinite',
+                        'slide-in-right': 'slideInRight 0.4s ease-out forwards',
+                        'bounce-subtle': 'bounceSubtle 2s ease-in-out infinite',
+                        'fade-in': 'fadeIn 0.3s ease-out forwards',
+                        'toolbar-fade-in': 'toolbarFadeIn 0.4s ease-out forwards',
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
+        * {
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            overflow-x: hidden;
+        }
+
+        /* Custom Animations */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: scale(0.95); }
+            to { opacity: 1; transform: scale(1); }
+        }
+        
+        @keyframes fadeUp {
+            from { 
+                opacity: 0; 
+                transform: translateY(20px); 
+            }
+            to { 
+                opacity: 1; 
+                transform: translateY(0); 
+            }
+        }
+
+        @keyframes scaleIn {
+            from { 
+                opacity: 0; 
+                transform: scale(0.9); 
+            }
+            to { 
+                opacity: 1; 
+                transform: scale(1); 
+            }
+        }
+
+        @keyframes glowPulse {
+            0%, 100% { 
+                box-shadow: 0 0 20px rgba(16, 185, 129, 0.4), 0 0 40px rgba(16, 185, 129, 0.2);
+            }
+            50% { 
+                box-shadow: 0 0 30px rgba(16, 185, 129, 0.6), 0 0 60px rgba(16, 185, 129, 0.3);
+            }
+        }
+
+        @keyframes orbDrift {
+            0%, 100% { 
+                transform: translate(0, 0) scale(1); 
+            }
+            25% { 
+                transform: translate(100px, -100px) scale(1.1); 
+            }
+            50% { 
+                transform: translate(-50px, -150px) scale(0.9); 
+            }
+            75% { 
+                transform: translate(-150px, 50px) scale(1.05); 
+            }
+        }
+        
+        @keyframes slideInRight {
+            from { 
+                opacity: 0; 
+                transform: translateX(20px); 
+            }
+            to { 
+                opacity: 1; 
+                transform: translateX(0); 
+            }
+        }
+        
+        @keyframes toolbarFadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes bounceSubtle {
+            0%, 100% { 
+                transform: translateY(0); 
+            }
+            50% { 
+                transform: translateY(-10px); 
+            }
+        }
+
+        /* Message bubble animations */
+        @keyframes messageBounce {
+            0% { 
+                opacity: 0; 
+                transform: scale(0.8) translateY(20px); 
+            }
+            60% { 
+                transform: scale(1.02) translateY(-2px); 
+            }
+            100% { 
+                opacity: 1; 
+                transform: scale(1) translateY(0); 
+            }
+        }
+
+        .message-enter {
+            animation: messageBounce 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+        }
+
+        /* Typing indicator glow */
+        .typing-dot {
+            animation: typingGlow 1.4s ease-in-out infinite;
+        }
+
+        .typing-dot:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+
+        .typing-dot:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+
+        @keyframes typingGlow {
+            0%, 60%, 100% {
+                opacity: 0.3;
+                transform: scale(0.8);
+            }
+            30% {
+                opacity: 1;
+                transform: scale(1.2);
+            }
+        }
+        
+        /* Typing cursor for streaming */
+        .typing-cursor {
+            display: inline-block;
+            width: 8px;
+            height: 1.2em;
+            background-color: #10b981;
+            animation: blink 1s step-end infinite;
+            border-radius: 1px;
+            margin-left: 2px;
+            vertical-align: text-bottom;
+        }
+
+        @keyframes blink {
+            from, to { background-color: transparent }
+            50% { background-color: #10b981; }
+        }
+        
+        /* Gradient text */
+        .gradient-text {
+            background: linear-gradient(135deg, #10b981 0%, #3b82f6 50%, #8b5cf6 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .orb {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(40px);
+            opacity: 0.6;
+            animation: orbDrift 20s ease-in-out infinite;
+            pointer-events: none;
+        }
+
+        /* Action button tooltip */
+        .action-button .tooltip {
+            visibility: hidden;
+            opacity: 0;
+            transition: opacity 0.2s, transform 0.2s;
+        }
+
+        .action-button:hover .tooltip {
+            visibility: visible;
+            opacity: 1;
+            transform: translateY(-4px);
+        }
+
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.1);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: rgba(16, 185, 129, 0.5);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(16, 185, 129, 0.7);
+        }
+
+        /* Dark mode scrollbar */
+        .dark ::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .dark ::-webkit-scrollbar-thumb {
+            background: rgba(16, 185, 129, 0.4);
+        }
+
+        .dark ::-webkit-scrollbar-thumb:hover {
+            background: rgba(16, 185, 129, 0.6);
+        }
+    </style>
+<script type="importmap">
+{
+  "imports": {
+    "react": "https://aistudiocdn.com/react@^19.2.0",
+    "react-dom/client": "https://aistudiocdn.com/react-dom@^19.2.0/client",
+    "@google/genai": "https://aistudiocdn.com/@google/genai@^1.29.1",
+    "react/": "https://aistudiocdn.com/react@^19.2.0/",
+    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/"
+  }
+}
+</script>
+</head>
+<body class="bg-gradient-to-br from-slate-50 via-blue-50 to-emerald-50 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 transition-colors duration-500">
+    <div id="root"></div>
+    <script type="module">
+        import React, { useState, useEffect, useRef, useCallback } from 'react';
+        import ReactDOM from 'react-dom/client';
+        import { GoogleGenAI, Type } from "@google/genai";
+
+        // --- Start of inlined content ---
+
+        // From constants.ts
+        const LANGUAGES = {
+            'en-IN': 'English',
+            'hi-IN': 'हिन्दी (Hindi)',
+            'bn-IN': 'বাংলা (Bengali)',
+            'mr-IN': 'मराठी (Marathi)',
+            'ta-IN': 'தமிழ் (Tamil)',
+            'te-IN': 'తెలుగు (Telugu)',
+            'gu-IN': 'ગુજરાતી (Gujarati)',
+        };
+        const CATEGORIES = {
+            'en-IN': [
+                { title: '🏦 Government Schemes' },
+                { title: '🌿 Agriculture Help' },
+                { title: '⚖️ Legal Rights' },
+                { title: '💼 Job Opportunities' },
+                { title: '🌦️ Weather Advisory' },
+                { title: '🐛 Pest & Disease Help' },
+                { title: '📄 Document Guide' },
+                { title: '🌱 Fertilizer Calculator' }
+            ],
+            'hi-IN': [
+                { title: '🏦 सरकारी योजनाएं' },
+                { title: '🌿 कृषि सहायता' },
+                { title: '⚖️ कानूनी अधिकार' },
+                { title: '💼 रोजगार के अवसर' },
+                { title: '🌦️ मौसम सलाह' },
+                { title: '🐛 कीट एवं रोग सहायता' },
+                { title: '📄 दस्तावेज़ सहायता' },
+                { title: '🌱 उर्वरक कैलकुलेटर' }
+            ],
+        };
+        
+        // From services/geminiService.ts
+        const getGoogleGenAI = (apiKey) => new GoogleGenAI({ apiKey });
+        const getSystemInstruction = (languageName) => ({
+            parts: [{ text: `You are "GramGPT", an expert AI assistant for rural India. Your primary goal is to provide clear, concise, and actionable information.
+The user is communicating in ${languageName}.
+You MUST respond fluently and accurately in ${languageName}.
+Your knowledge base includes: Indian government schemes, modern agricultural practices, legal rights, job opportunities, common pest/disease diagnosis for crops, step-by-step guides for applying for government documents, and fertilizer calculation estimates based on crop and area.
+Keep your answers simple, easy to understand for a non-technical audience, and use bullet points or numbered lists for clarity where possible. Use markdown for formatting, for example **bold** for important terms.
+When providing pest/disease advice or fertilizer calculations, **always include a disclaimer** to consult local authorities or experts for confirmation.
+If you don't know an answer, say so honestly in ${languageName} and suggest where they might find the information.
+Do not mention that you are a language model. Just be the helpful assistant, GramGPT.`}]
+        });
+        const startChat = (apiKey, languageName, history) => {
+            const ai = getGoogleGenAI(apiKey);
+            return ai.chats.create({
+                model: 'gemini-2.5-flash',
+                history: history,
+                config: {
+                    systemInstruction: getSystemInstruction(languageName),
+                    temperature: 0.7,
+                    topK: 40,
+                    topP: 0.95
+                }
+            });
+        };
+        const generateSummary = async (apiKey, textToSummarize, languageName) => {
+            const ai = getGoogleGenAI(apiKey);
+            const prompt = `Please summarize the following text in about one or two simple sentences, in the ${languageName} language:\n\n---\n\n${textToSummarize}`;
+            try {
+                const response = await ai.models.generateContent({
+                    model: 'gemini-2.5-flash',
+                    contents: [{ parts: [{ text: prompt }] }],
+                    config: {
+                        temperature: 0.5
+                    }
+                });
+                return response.text;
+            } catch (error) {
+                console.error("Gemini API call failed in generateSummary:", error);
+                throw error;
+            }
+        };
+        const generateSuggestions = async (apiKey, history, languageName) => {
+            const ai = getGoogleGenAI(apiKey);
+            const conversationContext = history.map(msg => `${msg.role}: ${msg.parts[0].text}`).join('\n');
+            const prompt = `Based on this conversation, suggest three relevant, short follow-up questions a user might ask. The user is speaking ${languageName}, so provide the suggestions in that language. Return ONLY a JSON array of strings, like ["question 1", "question 2", "question 3"].\n\nConversation:\n${conversationContext}`;
+            
+            try {
+                const response = await ai.models.generateContent({
+                    model: 'gemini-2.5-flash',
+                    contents: [{ parts: [{ text: prompt }] }],
+                    config: {
+                        temperature: 0.8,
+                        responseMimeType: "application/json",
+                        responseSchema: {
+                            type: Type.ARRAY,
+                            items: {
+                                type: Type.STRING
+                            }
+                        }
+                    }
+                });
+                const jsonText = response.text.trim();
+                return JSON.parse(jsonText);
+            } catch (error) {
+                console.error("Gemini API call failed in generateSuggestions:", error);
+                throw error;
+            }
+        };
+
+        // From components/ApiKeyModal.tsx
+        const ApiKeyModal = ({ onSubmit }) => {
+            const [apiKey, setApiKey] = useState('');
+
+            const handleSubmit = (e) => {
+                e.preventDefault();
+                if (apiKey.trim()) {
+                    onSubmit(apiKey.trim());
+                }
+            };
+
+            return (
+                React.createElement("div", { className: "fixed inset-0 bg-slate-900/60 backdrop-blur-md flex items-center justify-center z-50 animate-fade-in p-4" },
+                    React.createElement("div", { className: "bg-white dark:bg-slate-900 rounded-2xl shadow-2xl w-full max-w-md p-8 border border-emerald-500/30 animate-scale-in" },
+                        React.createElement("form", { onSubmit: handleSubmit, className: "flex flex-col space-y-6" },
+                            React.createElement("div", { className: "text-center" },
+                                React.createElement("h2", { className: "text-2xl font-bold text-slate-800 dark:text-white mb-2" }, "Enter Your API Key"),
+                                React.createElement("p", { className: "text-slate-600 dark:text-slate-400" }, "To use GramGPT, please provide your Google Gemini API key.")
+                            ),
+                            React.createElement("div", { className: "flex flex-col" },
+                                React.createElement("label", { htmlFor: "apiKey", className: "text-sm font-medium text-slate-700 dark:text-slate-300 mb-2" }, "Gemini API Key"),
+                                React.createElement("input", {
+                                    id: "apiKey",
+                                    type: "password",
+                                    value: apiKey,
+                                    onChange: (e) => setApiKey(e.target.value),
+                                    className: "p-3 bg-slate-100 dark:bg-slate-800 rounded-lg border-2 border-slate-200 dark:border-slate-700 focus:border-emerald-500 focus:ring-emerald-500 focus:outline-none transition-colors duration-300 text-slate-900 dark:text-white",
+                                    placeholder: "AIzaSy...",
+                                    required: true
+                                })
+                            ),
+                            React.createElement("a", {
+                                href: "https://aistudio.google.com/app/apikey",
+                                target: "_blank",
+                                rel: "noopener noreferrer",
+                                className: "text-sm text-center text-emerald-600 dark:text-emerald-400 hover:underline"
+                            }, "Get your API key from Google AI Studio"),
+                            React.createElement("button", {
+                                type: "submit",
+                                disabled: !apiKey.trim(),
+                                className: "w-full p-3 rounded-lg bg-gradient-to-br from-emerald-500 to-teal-600 text-white font-bold text-lg hover:from-emerald-600 hover:to-teal-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 dark:focus:ring-offset-slate-900 transition-all duration-300 shadow-lg hover:shadow-emerald-500/50 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+                            }, "Continue")
+                        )
+                    )
+                )
+            );
+        };
+        
+        // From components/CategoryCard.tsx
+        const CategoryCard = ({ title, onClick, delay }) => {
+            const emoji = title.split(' ')[0];
+            const text = title.split(' ').slice(1).join(' ');
+
+            return (
+                React.createElement("div", {
+                    onClick: onClick,
+                    className: "card-3d group relative bg-white/60 dark:bg-slate-800/60 backdrop-blur-xl rounded-2xl shadow-xl p-6 sm:p-8 flex flex-col items-center justify-center text-center cursor-pointer border border-emerald-200/30 dark:border-emerald-500/20 opacity-0 animate-fade-up overflow-hidden transition-all duration-300 hover:shadow-emerald-500/40 hover:transform hover:-translate-y-2",
+                    style: { animationDelay: `${delay}ms` }
+                },
+                    React.createElement("div", { className: "absolute inset-0 bg-gradient-to-br from-emerald-400/0 via-teal-400/0 to-blue-400/0 group-hover:from-emerald-400/10 group-hover:via-teal-400/10 group-hover:to-blue-400/10 transition-all duration-500 rounded-2xl" }),
+                    React.createElement("div", { className: "relative z-10 text-5xl sm:text-6xl mb-4 transition-transform duration-300 group-hover:scale-125 group-hover:rotate-12 filter drop-shadow-lg" }, emoji),
+                    React.createElement("h3", { className: "relative z-10 text-base sm:text-lg font-bold text-slate-800 dark:text-white group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors duration-300" }, text),
+                    React.createElement("div", { className: "absolute -bottom-2 -right-2 w-20 h-20 bg-gradient-to-br from-emerald-400 to-teal-500 rounded-full blur-2xl opacity-0 group-hover:opacity-30 transition-opacity duration-500" })
+                )
+            );
+        };
+        
+        // From components/FloatingOrbs.tsx
+        const FloatingOrbs = () => {
+            const [isVisible, setIsVisible] = useState(true);
+
+            useEffect(() => {
+                const handleVisibilityChange = () => {
+                    setIsVisible(!document.hidden);
+                };
+                document.addEventListener('visibilitychange', handleVisibilityChange);
+                return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+            }, []);
+
+            if (!isVisible) return null;
+
+            return (
+                React.createElement("div", { className: "absolute inset-0 overflow-hidden pointer-events-none" },
+                    React.createElement("div", { className: "orb w-96 h-96 bg-gradient-to-r from-emerald-400 to-teal-500 top-10 -left-20", style: { animationDelay: '0s' } }),
+                    React.createElement("div", { className: "orb w-80 h-80 bg-gradient-to-r from-blue-400 to-purple-500 top-1/3 right-10", style: { animationDelay: '5s' } }),
+                    React.createElement("div", { className: "orb w-72 h-72 bg-gradient-to-r from-pink-400 to-rose-500 bottom-20 left-1/4", style: { animationDelay: '10s' } })
+                )
+            );
+        };
+
+        // From components/Footer.tsx
+        const Footer = () => (
+            React.createElement("footer", { className: "mt-auto border-t border-slate-200/50 dark:border-slate-800/50 bg-white/30 dark:bg-slate-900/30 backdrop-blur-sm" },
+                React.createElement("div", { className: "max-w-7xl mx-auto px-4 py-6 flex flex-col items-center space-y-3" },
+                    React.createElement("p", { className: "text-sm font-medium text-slate-600 dark:text-slate-400" },
+                        "Built with ", React.createElement("span", { className: "text-red-500 animate-pulse" }, "❤️"), " by Abhinav"
+                    ),
+                    React.createElement("a", {
+                        href: "https://www.linkedin.com/in/abhnv07",
+                        target: "_blank",
+                        rel: "noopener noreferrer",
+                        "aria-label": "Abhinav's LinkedIn Profile",
+                        className: "group"
+                    },
+                        React.createElement("svg", {
+                            xmlns: "http://www.w3.org/2000/svg",
+                            className: "h-7 w-7 text-slate-500 dark:text-slate-400 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-all duration-300 group-hover:scale-110",
+                            fill: "currentColor",
+                            viewBox: "0 0 24 24"
+                        },
+                            React.createElement("path", { d: "M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z" })
+                        )
+                    )
+                )
+            )
+        );
+
+        // From components/Header.tsx
+        const Header = ({ theme, setTheme, language, setLanguage, onHomeClick }) => {
+            const [scrolled, setScrolled] = useState(false);
+
+            const toggleTheme = () => {
+                const newTheme = theme === 'light' ? 'dark' : 'light';
+                setTheme(newTheme);
+                localStorage.setItem('theme', newTheme);
+            };
+
+            useEffect(() => {
+                const root = document.documentElement;
+                if (theme === 'dark') {
+                    root.classList.add('dark');
+                } else {
+                    root.classList.remove('dark');
+                }
+            }, [theme]);
+
+            useEffect(() => {
+                const handleScroll = () => {
+                    setScrolled(window.scrollY > 20);
+                };
+                window.addEventListener('scroll', handleScroll);
+                return () => window.removeEventListener('scroll', handleScroll);
+            }, []);
+
+            return (
+                React.createElement("header", {
+                    className: `sticky top-0 z-50 transition-all duration-300 ${scrolled ? 'bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl shadow-lg border-b border-emerald-100/20 dark:border-emerald-500/10' : 'bg-white/50 dark:bg-slate-900/50 backdrop-blur-md'}`
+                },
+                    React.createElement("div", { className: "max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center" },
+                        React.createElement("h1", {
+                            onClick: onHomeClick,
+                            className: "text-2xl sm:text-3xl font-bold cursor-pointer select-none transition-all duration-300 hover:scale-105 flex items-center gap-2"
+                        },
+                            React.createElement("span", { className: "text-slate-800 dark:text-white" }, "Gram"),
+                            React.createElement("span", { className: "gradient-text" }, "GPT"),
+                            React.createElement("span", { className: "text-2xl animate-bounce-subtle" }, "✨")
+                        ),
+                        React.createElement("div", { className: "flex items-center space-x-2 sm:space-x-4" },
+                            React.createElement("select", {
+                                value: language,
+                                onChange: (e) => setLanguage(e.target.value),
+                                className: "bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm border-2 border-emerald-200 dark:border-emerald-500/30 rounded-xl px-3 py-2 text-sm sm:text-base text-slate-800 dark:text-white font-medium shadow-lg focus:ring-2 focus:ring-emerald-500 focus:outline-none transition-all duration-300 hover:border-emerald-400 dark:hover:border-emerald-400"
+                            },
+                                Object.entries(LANGUAGES).map(([code, name]) => (
+                                    React.createElement("option", { key: code, value: code }, name)
+                                ))
+                            ),
+                            React.createElement("button", {
+                                onClick: toggleTheme,
+                                className: "p-2.5 sm:p-3 rounded-xl bg-gradient-to-br from-emerald-400 to-teal-500 text-white hover:from-emerald-500 hover:to-teal-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 transition-all duration-300 shadow-lg hover:shadow-emerald-500/50 hover:scale-110",
+                                "aria-label": "Toggle theme"
+                            },
+                                theme === 'light' ? (
+                                    React.createElement("svg", { xmlns: "http://www.w3.org/2000/svg", className: "h-5 w-5 sm:h-6 sm:w-6", fill: "none", viewBox: "0 0 24 24", stroke: "currentColor" }, React.createElement("path", { strokeLinecap: "round", strokeLinejoin: "round", strokeWidth: 2, d: "M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" }))
+                                ) : (
+                                    React.createElement("svg", { xmlns: "http://www.w3.org/2000/svg", className: "h-5 w-5 sm:h-6 sm:w-6", fill: "none", viewBox: "0 0 24 24", stroke: "currentColor" }, React.createElement("path", { strokeLinecap: "round", strokeLinejoin: "round", strokeWidth: 2, d: "M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" }))
+                                )
+                            )
+                        )
+                    )
+                )
+            );
+        };
+        
+        // From components/HomePage.tsx
+        const HomePage = ({ onCategorySelect, language }) => {
+            const currentCategories = CATEGORIES[language] || CATEGORIES['en-IN'];
+            
+            return (
+                React.createElement("div", { className: "relative min-h-[calc(100vh-200px)]" },
+                    React.createElement(FloatingOrbs, null),
+                    
+                    React.createElement("div", { className: "relative z-10 text-center pt-12 sm:pt-20 pb-16 px-4" },
+                        React.createElement("div", { className: "max-w-4xl mx-auto space-y-6" },
+                            React.createElement("h2", { className: "text-4xl sm:text-6xl lg:text-7xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-emerald-600 via-teal-500 to-blue-600 dark:from-emerald-400 dark:via-teal-400 dark:to-blue-400 opacity-0 animate-scale-in mb-4", style: { animationDelay: '100ms' } },
+                                "Welcome to GramGPT! 🚀"
+                            ),
+                            React.createElement("p", { className: "text-lg sm:text-xl lg:text-2xl text-slate-700 dark:text-slate-300 font-medium opacity-0 animate-fade-up leading-relaxed max-w-3xl mx-auto", style: { animationDelay: '300ms' } },
+                                "Your intelligent AI assistant for rural India.",
+                                React.createElement("br", null),
+                                React.createElement("span", { className: "text-emerald-600 dark:text-emerald-400 font-semibold" }, "Get instant, reliable information in your own language.")
+                            ),
+                            React.createElement("div", { className: "flex flex-wrap justify-center gap-4 opacity-0 animate-fade-up", style: { animationDelay: '500ms' } },
+                                React.createElement("div", { className: "flex items-center gap-2 bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm px-4 py-2 rounded-full shadow-lg border border-emerald-200/50 dark:border-emerald-500/30" },
+                                    React.createElement("span", { className: "text-2xl" }, "🌍"),
+                                    React.createElement("span", { className: "text-sm font-semibold text-slate-700 dark:text-slate-300" }, "Multi-Language")
+                                ),
+                                React.createElement("div", { className: "flex items-center gap-2 bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm px-4 py-2 rounded-full shadow-lg border border-emerald-200/50 dark:border-emerald-500/30" },
+                                    React.createElement("span", { className: "text-2xl" }, "🎤"),
+                                    React.createElement("span", { className: "text-sm font-semibold text-slate-700 dark:text-slate-300" }, "Voice Enabled")
+                                ),
+                                React.createElement("div", { className: "flex items-center gap-2 bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm px-4 py-2 rounded-full shadow-lg border border-emerald-200/50 dark:border-emerald-500/30" },
+                                    React.createElement("span", { className: "text-2xl" }, "⚡"),
+                                    React.createElement("span", { className: "text-sm font-semibold text-slate-700 dark:text-slate-300" }, "AI Powered")
+                                )
+                            )
+                        )
+                    ),
+
+                    React.createElement("div", { className: "relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-16" },
+                        React.createElement("h3", { className: "text-2xl sm:text-3xl font-bold text-center text-slate-800 dark:text-white mb-10 opacity-0 animate-fade-up", style: { animationDelay: '600ms' } },
+                            "Select a Category to Begin"
+                        ),
+                        React.createElement("div", { className: "grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6" },
+                            currentCategories.map((cat, index) => (
+                                React.createElement(CategoryCard, {
+                                    key: cat.title,
+                                    title: cat.title,
+                                    onClick: () => onCategorySelect(cat.title),
+                                    delay: 700 + index * 80
+                                })
+                            ))
+                        )
+                    )
+                )
+            );
+        };
+
+        // From components/Message.tsx
+        const Message = ({ message, onSpeak, onCopy, onSummarize, isStreaming, onRegenerate, onFeedback, isLastMessage }) => {
+            const isUser = message.role === 'user';
+            const plainTextForSpeechAndCopy = message.text.replace(/\*\*/g, '').replace(/\*/g, '');
+
+            const showToolbar = !isUser && !isStreaming && message.text;
+            const toolbarClasses = `transition-opacity duration-300 ${isLastMessage ? 'opacity-100 animate-toolbar-fade-in' : 'opacity-0 group-hover:opacity-100'}`;
+            
+            const parseSimpleMarkdown = (text = '') => {
+                let html = text
+                    .replace(/\*\*(.*?)\*\*/g, '<strong class="font-bold text-emerald-700 dark:text-emerald-300">$1</strong>')
+                    .replace(/(?<!\*)\*(.*?)\*(?!\*)/g, '<em class="italic">$1</em>')
+                    .replace(/^- (.*$)/gm, '<ul class="list-disc list-inside ml-4"><li>$1</li></ul>')
+                    .replace(/<\/ul>\s?<ul>/g, '');
+                return html;
+            };
+
+            const UserAvatar = () => (
+                React.createElement("div", { className: "flex-shrink-0 w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-bold shadow-lg" },
+                    React.createElement("svg", { xmlns: "http://www.w3.org/2000/svg", className: "h-6 w-6 text-white", viewBox: "0 0 20 20", fill: "currentColor" },
+                        React.createElement("path", { fillRule: "evenodd", d: "M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z", clipRule: "evenodd" })
+                    )
+                )
+            );
+
+            const AiAvatar = () => (
+                React.createElement("div", { className: "flex-shrink-0 w-10 h-10 rounded-full bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center text-white font-bold shadow-lg" },
+                    React.createElement("svg", { xmlns: "http://www.w3.org/2000/svg", className: "h-6 w-6 text-white", fill: "none", viewBox: "0 0 24 24", stroke: "currentColor", strokeWidth: 2 },
+                        React.createElement("path", { strokeLinecap: "round", strokeLinejoin: "round", d: "M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.293 2.293a1 1 0 010 1.414L10 12l-2.293-2.293a1 1 0 010-1.414L10 6m5 4l2.293 2.293a1 1 0 010 1.414L12 18l-2.293-2.293a1 1 0 010-1.414L12 12m-3 8l2.293-2.293a1 1 0 011.414 0L17 18m-3-4l2.293-2.293a1 1 0 011.414 0L21 14" })
+                    )
+                )
+            );
+
+            const ActionButton = ({ onClick, label, children }) => (
+                React.createElement("div", { className: "relative action-button" },
+                    React.createElement("button", {
+                        onClick: onClick,
+                        className: "p-2 rounded-full bg-white/70 dark:bg-slate-700/70 backdrop-blur-sm text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600 hover:text-emerald-600 dark:hover:text-emerald-400 focus:outline-none transition-all duration-200 hover:scale-110",
+                        "aria-label": label
+                    }, children),
+                    React.createElement("div", { className: "tooltip absolute bottom-full mb-2 left-1/2 -translate-x-1/2 px-2 py-1 bg-slate-800 text-white text-xs font-semibold rounded-md shadow-lg whitespace-nowrap" }, label)
+                )
+            );
+
+            return (
+                React.createElement("div", { className: "flex flex-col group" },
+                    React.createElement("div", { className: `flex items-end gap-3 message-enter ${isUser ? 'self-end' : 'self-start'}` },
+                        !isUser && React.createElement(AiAvatar, null),
+                        React.createElement("div", {
+                            className: `max-w-xs sm:max-w-md lg:max-w-2xl px-5 py-4 rounded-3xl shadow-xl backdrop-blur-xl border transition-all duration-300 ${isUser ? 'bg-gradient-to-br from-emerald-500 to-teal-600 text-white rounded-br-md border-emerald-400/50' : 'bg-white/90 dark:bg-slate-800/90 text-slate-800 dark:text-slate-100 rounded-bl-md border-slate-200/50 dark:border-slate-700/50'}`
+                        },
+                            React.createElement("div", { className: "whitespace-pre-wrap leading-relaxed" },
+                                React.createElement("span", { dangerouslySetInnerHTML: { __html: parseSimpleMarkdown(message.text) } }),
+                                isStreaming && React.createElement("span", { className: "typing-cursor" })
+                            )
+                        ),
+                        isUser && React.createElement(UserAvatar, null)
+                    ),
+                    showToolbar && (
+                        React.createElement("div", { className: `flex items-center gap-1 self-start ml-14 mt-2 p-1 bg-white/60 dark:bg-slate-800/60 backdrop-blur-lg rounded-full border border-slate-200/50 dark:border-slate-700/50 shadow-md ${toolbarClasses}` },
+                            React.createElement(ActionButton, { onClick: () => onSpeak(plainTextForSpeechAndCopy), label: "Speak" },
+                                React.createElement("svg", { xmlns: "http://www.w3.org/2000/svg", className: "h-5 w-5", fill: "none", viewBox: "0 0 24 24", stroke: "currentColor" }, React.createElement("path", { strokeLinecap: "round", strokeLinejoin: "round", strokeWidth: 2, d: "M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.858 17.142a5.001 5.001 0 010-7.072m2.828 9.9a9 9 0 010-12.728M12 12h.01" }))
+                            ),
+                            React.createElement(ActionButton, { onClick: () => onCopy(plainTextForSpeechAndCopy), label: "Copy" },
+                                React.createElement("svg", { xmlns: "http://www.w3.org/2000/svg", className: "h-5 w-5", fill: "none", viewBox: "0 0 24 24", stroke: "currentColor" }, React.createElement("path", { strokeLinecap: "round", strokeLinejoin: "round", strokeWidth: 2, d: "M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" }))
+                            ),
+                            React.createElement(ActionButton, { onClick: () => onSummarize(message.text), label: "Summarize" },
+                                React.createElement("span", { className: "font-bold text-base" }, "✨")
+                            ),
+                            isLastMessage && (
+                                React.createElement(ActionButton, { onClick: onRegenerate, label: "Regenerate" },
+                                    React.createElement("svg", { xmlns: "http://www.w3.org/2000/svg", className: "h-5 w-5", viewBox: "0 0 20 20", fill: "currentColor" },
+                                        React.createElement("path", { fillRule: "evenodd", d: "M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 110 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z", clipRule: "evenodd" })
+                                    )
+                                )
+                            ),
+                            React.createElement("div", { className: "w-px h-6 bg-slate-200 dark:bg-slate-700 mx-1" }),
+                            React.createElement(ActionButton, { onClick: () => onFeedback('up'), label: "Good response" },
+                                React.createElement("svg", { xmlns: "http://www.w3.org/2000/svg", className: "h-5 w-5", viewBox: "0 0 20 20", fill: "currentColor" },
+                                    React.createElement("path", { d: "M2 10.5a1.5 1.5 0 113 0v6a1.5 1.5 0 01-3 0v-6zM6 10.333V17a1 1 0 001 1h6.758a1 1 0 00.97-1.22l-1.958-6.364a1 1 0 00-.97-.78h-3.55l.84-2.491a.5.5 0 00-.42-.742A.5.5 0 008 6.5v.5a.5.5 0 00.5.5h2.533l-1.22 3.864a.5.5 0 00.47.636h3.42a.5.5 0 00.47-.636L15.333 6.5a1 1 0 00-.97-1.22H9.5a.5.5 0 00-.42.223L7.758 8.42a.5.5 0 00.47.78h.585a.5.5 0 00.47-.636L9.22 7.758a.5.5 0 00-.47-.78H7.25a1 1 0 00-.97 1.22l.333 1.094a.5.5 0 00.47.363h.585a.5.5 0 00.47-.636L7.22 8.758a.5.5 0 00-.47-.78H6a1 1 0 00-.97 1.22l.333 1.094A1.5 1.5 0 006 10.333z" })
+                                )
+                            ),
+                            React.createElement(ActionButton, { onClick: () => onFeedback('down'), label: "Bad response" },
+                                React.createElement("svg", { xmlns: "http://www.w3.org/2000/svg", className: "h-5 w-5", viewBox: "0 0 20 20", fill: "currentColor" },
+                                    React.createElement("path", { d: "M18 9.5a1.5 1.5 0 11-3 0v-6a1.5 1.5 0 013 0v6zM14 9.667V3a1 1 0 00-1-1H6.242a1 1 0 00-.97 1.22l1.958 6.364a1 1 0 00.97.78h3.55l-.84 2.491a.5.5 0 00.42.742.5.5 0 00.47-.223V13.5a.5.5 0 00-.5-.5h-2.533l1.22-3.864a.5.5 0 00-.47-.636H6.58a.5.5 0 00-.47.636L4.667 13.5a1 1 0 00.97 1.22H10.5a.5.5 0 00.42-.223l1.328-2.083a.5.5 0 00-.47-.78h-.585a.5.5 0 00-.47.636l.555 1.742a.5.5 0 00.47.363h1.47a1 1 0 00.97-1.22l-.333-1.094A1.5 1.5 0 0014 9.667z" })
+                                )
+                            )
+                        )
+                    )
+                )
+            );
+        };
+
+        // From components/Toast.tsx
+        const Toast = ({ message, show, onDismiss }) => {
+            useEffect(() => {
+                if (show) {
+                    const timer = setTimeout(() => {
+                        onDismiss();
+                    }, 3000);
+                    return () => clearTimeout(timer);
+                }
+            }, [show, onDismiss]);
+
+            if (!show) return null;
+
+            return (
+                React.createElement("div", { className: "fixed bottom-8 left-1/2 -translate-x-1/2 z-50 animate-scale-in" },
+                    React.createElement("div", { className: "bg-slate-900/95 dark:bg-white/95 backdrop-blur-xl text-white dark:text-slate-900 py-3 px-6 rounded-2xl shadow-2xl border border-emerald-500/30 flex items-center gap-3" },
+                        React.createElement("span", { className: "text-2xl" }, "✅"),
+                        React.createElement("span", { className: "font-medium" }, message)
+                    )
+                )
+            );
+        };
+
+        // From components/TypingIndicator.tsx
+        const TypingIndicator = () => (
+            React.createElement("div", { className: "flex items-end gap-2 message-enter" },
+                React.createElement("div", { className: "flex items-center justify-center space-x-2 px-6 py-4 rounded-3xl bg-white/90 dark:bg-slate-800/90 backdrop-blur-xl shadow-xl border border-emerald-200/30 dark:border-emerald-500/20 rounded-bl-md" },
+                    React.createElement("div", { className: "typing-dot w-3 h-3 bg-gradient-to-r from-emerald-400 to-teal-500 rounded-full shadow-lg" }),
+                    React.createElement("div", { className: "typing-dot w-3 h-3 bg-gradient-to-r from-teal-400 to-blue-500 rounded-full shadow-lg" }),
+                    React.createElement("div", { className: "typing-dot w-3 h-3 bg-gradient-to-r from-blue-400 to-purple-500 rounded-full shadow-lg" })
+                )
+            )
+        );
+
+        // From components/ChatWindow.tsx
+        const ChatWindow = ({
+            messages, onSendMessage, language, onSpeak, isLoading, onClearChat, onCopy, onSummarize, onGetSuggestions, suggestions, showToast, onStopGenerating, onRegenerate, onFeedback
+        }) => {
+            const [input, setInput] = useState('');
+            const [isListening, setIsListening] = useState(false);
+            const chatEndRef = useRef(null);
+            const recognitionRef = useRef(null);
+
+            useEffect(() => {
+                chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+            }, [messages, isLoading]);
+            
+            const handleSend = () => {
+                if (input.trim() && !isLoading) {
+                    onSendMessage(input.trim());
+                    setInput('');
+                }
+            };
+
+            const handleVoiceInput = useCallback(() => {
+                if (isListening) {
+                    recognitionRef.current?.stop();
+                    setIsListening(false);
+                    return;
+                }
+
+                const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+                if (!SpeechRecognition) {
+                    showToast("Sorry, your browser doesn't support speech recognition.");
+                    return;
+                }
+
+                const recognition = new SpeechRecognition();
+                recognition.lang = language;
+                recognition.interimResults = false;
+                recognition.maxAlternatives = 1;
+                recognitionRef.current = recognition;
+
+                recognition.onstart = () => setIsListening(true);
+                recognition.onend = () => setIsListening(false);
+                recognition.onerror = (event) => {
+                    console.error('Speech recognition error:', event.error);
+                    setIsListening(false);
+                };
+
+                recognition.onresult = (event) => {
+                    const speechResult = event.results[0][0].transcript;
+                    setInput(prev => prev ? `${prev} ${speechResult}` : speechResult);
+                };
+
+                recognition.start();
+            }, [isListening, language, showToast]);
+            
+            const ChatIntro = () => (
+                React.createElement("div", { className: "flex flex-col items-center justify-center h-full text-center p-4 animate-fade-up" },
+                    React.createElement("div", { className: "text-6xl mb-4" },
+                        React.createElement("span", { className: "text-slate-800 dark:text-white filter drop-shadow-lg" }, "Gram"),
+                        React.createElement("span", { className: "gradient-text" }, "GPT")
+                    ),
+                    React.createElement("p", { className: "text-lg text-slate-600 dark:text-slate-400 max-w-md" },
+                        "Your AI assistant for rural India. Select a category from the home page or ask me a question to get started."
+                    )
+                )
+            );
+
+            return (
+                React.createElement("div", { className: "flex flex-col flex-grow relative" },
+                    React.createElement("div", { className: "flex-grow p-4 sm:p-6 space-y-6 overflow-y-auto" },
+                        messages.length <= 1 ? React.createElement(ChatIntro, null) : (
+                        React.createElement(React.Fragment, null,
+                            React.createElement("div", { className: "flex justify-center sticky top-2 z-10" },
+                                React.createElement("button", { 
+                                    onClick: onClearChat,
+                                    className: "bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl text-sm font-semibold text-slate-700 dark:text-slate-300 py-2 px-5 rounded-full hover:bg-red-50 dark:hover:bg-red-900/30 hover:text-red-600 dark:hover:text-red-400 transition-all duration-300 shadow-lg border border-slate-200/50 dark:border-slate-700/50 hover:border-red-300 dark:hover:border-red-500/50 hover:scale-105"
+                                }, "🗑️ Clear Chat")
+                            ),
+                            messages.map((msg, index) => (
+                                React.createElement(Message, {
+                                    key: index,
+                                    message: msg,
+                                    onSpeak: onSpeak,
+                                    onCopy: onCopy,
+                                    onSummarize: onSummarize,
+                                    isStreaming: index === messages.length - 1 && isLoading && msg.role === 'model',
+                                    onRegenerate: onRegenerate,
+                                    onFeedback: onFeedback,
+                                    isLastMessage: index === messages.length - 1
+                                })
+                            ))
+                        )
+                        ),
+                        
+                        isLoading && messages[messages.length - 1]?.text === '' && React.createElement(TypingIndicator, null),
+                        
+                        !isLoading && messages.length > 2 && (
+                            React.createElement("div", { className: "flex justify-center animate-fade-up" },
+                                React.createElement("button", { 
+                                    onClick: onGetSuggestions, 
+                                    className: "bg-gradient-to-r from-emerald-500 to-teal-600 text-white text-sm font-bold py-3 px-6 rounded-2xl hover:from-emerald-600 hover:to-teal-700 transition-all duration-300 flex items-center gap-2 shadow-xl hover:shadow-emerald-500/50 hover:scale-105 border border-emerald-400/50"
+                                },
+                                    React.createElement("span", { className: "text-xl" }, "✨"),
+                                    "Smart Suggestions"
+                                )
+                            )
+                        ),
+
+                        suggestions.length > 0 && !isLoading && (
+                            React.createElement("div", { className: "flex flex-col items-center gap-3 py-2" },
+                                suggestions.map((s, i) => (
+                                    React.createElement("button", {
+                                        key: i,
+                                        onClick: () => onSendMessage(s),
+                                        className: "bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl w-full max-w-2xl text-left p-4 rounded-2xl text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-emerald-50 dark:hover:bg-emerald-900/30 hover:text-emerald-700 dark:hover:text-emerald-300 transition-all duration-300 shadow-lg border border-slate-200/50 dark:border-slate-700/50 hover:border-emerald-300 dark:hover:border-emerald-500/50 hover:scale-[1.02] opacity-0 animate-slide-in-right",
+                                        style: { animationDelay: `${i * 100}ms` }
+                                    }, `💬 ${s}`)
+                                ))
+                            )
+                        ),
+                        React.createElement("div", { ref: chatEndRef })
+                    ),
+
+                    React.createElement("div", { className: "sticky bottom-0 p-4 sm:p-6 bg-white/70 dark:bg-slate-900/70 backdrop-blur-xl border-t border-slate-200/50 dark:border-slate-800/50" },
+                        React.createElement("div", { className: "max-w-4xl mx-auto" },
+                            isLoading && (
+                                React.createElement("div", { className: "flex justify-center mb-3" },
+                                    React.createElement("button", {
+                                        onClick: onStopGenerating,
+                                        className: "animate-fade-in flex items-center gap-2 px-4 py-2 text-sm font-semibold text-red-600 dark:text-red-400 bg-red-100/80 dark:bg-red-900/80 backdrop-blur-sm rounded-full shadow-lg border border-red-300/50 dark:border-red-500/50 hover:bg-red-200/80 dark:hover:bg-red-800/80 transition-all duration-300"
+                                    },
+                                        React.createElement("svg", { xmlns: "http://www.w3.org/2000/svg", className: "h-4 w-4", viewBox: "0 0 20 20", fill: "currentColor" },
+                                            React.createElement("path", { fillRule: "evenodd", d: "M10 18a8 8 0 100-16 8 8 0 000 16zM8 9a1 1 0 011-1h2a1 1 0 110 2H9a1 1 0 01-1-1z", clipRule: "evenodd" })
+                                        ),
+                                        "Stop Generating"
+                                    )
+                                )
+                            ),
+                            React.createElement("div", { className: `flex items-end space-x-3 bg-white/90 dark:bg-slate-800/90 backdrop-blur-xl rounded-3xl shadow-2xl p-3 border-2 transition-all duration-300 ${isLoading ? 'border-slate-300/50 dark:border-slate-700/50' : 'border-emerald-200/50 dark:border-emerald-500/30 focus-within:border-emerald-400 dark:focus-within:border-emerald-400 focus-within:shadow-emerald-500/30'}` },
+                                React.createElement("textarea", {
+                                    value: input,
+                                    onChange: (e) => setInput(e.target.value),
+                                    onKeyPress: (e) => e.key === 'Enter' && !e.shiftKey && (e.preventDefault(), handleSend()),
+                                    placeholder: isLoading ? "Waiting for response..." : "Type your message...",
+                                    className: "flex-grow p-3 bg-transparent text-slate-900 dark:text-slate-100 placeholder-slate-500 dark:placeholder-slate-400 focus:outline-none resize-none font-medium text-base",
+                                    rows: 1,
+                                    style: { maxHeight: '120px' },
+                                    disabled: isLoading
+                                }),
+                                React.createElement("button", {
+                                    onClick: handleVoiceInput,
+                                    className: `flex-shrink-0 p-3 sm:p-4 rounded-2xl focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all duration-300 shadow-lg hover:scale-110 ${isListening ? 'bg-gradient-to-br from-red-500 to-pink-600 text-white animate-glow-pulse' : 'bg-gradient-to-br from-slate-200 to-slate-300 dark:from-slate-700 dark:to-slate-600 text-slate-700 dark:text-slate-300 hover:from-emerald-400 hover:to-teal-500 hover:text-white'}`,
+                                    "aria-label": isListening ? 'Stop listening' : 'Start voice input',
+                                    disabled: isLoading
+                                },
+                                    React.createElement("svg", { xmlns: "http://www.w3.org/2000/svg", className: "h-6 w-6 sm:h-7 sm:w-7", fill: "none", viewBox: "0 0 24 24", stroke: "currentColor" }, React.createElement("path", { strokeLinecap: "round", strokeLinejoin: "round", strokeWidth: 2, d: "M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" }))
+                                ),
+                                React.createElement("button", {
+                                    onClick: handleSend,
+                                    disabled: !input.trim() || isLoading,
+                                    className: "flex-shrink-0 p-3 sm:p-4 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 text-white hover:from-emerald-600 hover:to-teal-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all duration-300 shadow-lg hover:shadow-emerald-500/50 hover:scale-110 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100",
+                                    "aria-label": "Send message"
+                                },
+                                    React.createElement("svg", { xmlns: "http://www.w3.org/2000/svg", className: "h-6 w-6 sm:h-7 sm:w-7", fill: "none", viewBox: "0 0 24 24", stroke: "currentColor" }, React.createElement("path", { strokeLinecap: "round", strokeLinejoin: "round", strokeWidth: 2, d: "M12 19l9 2-9-18-9 18 9-2zm0 0v-8" }))
+                                )
+                            )
+                        )
+                    )
+                )
+            );
+        };
+        
+        // From App.tsx
+        const App = () => {
+            const [apiKey, setApiKey] = useState(null);
+            const [theme, setTheme] = useState(() => localStorage.getItem('theme') || 'light');
+            const [language, setLanguage] = useState('en-IN');
+            const [messages, setMessages] = useState([]);
+            const [isLoading, setIsLoading] = useState(false);
+            const [view, setView] = useState('home');
+            const [suggestions, setSuggestions] = useState([]);
+            const [toast, setToast] = useState({ show: false, message: '' });
+            const [stopGenerating, setStopGenerating] = useState(() => () => {});
+            const chatRef = useRef(null);
+
+            useEffect(() => {
+                const storedKey = sessionStorage.getItem('gemini-api-key');
+                if (storedKey) {
+                    setApiKey(storedKey);
+                }
+            }, []);
+
+            const getInitialMessage = () => ({
+                role: 'model',
+                text: 'Hello! I am GramGPT. I can help you with information on government schemes, farming, legal rights, and jobs. How can I assist you today?',
+            });
+
+            useEffect(() => {
+                if (!apiKey) return;
+
+                const initialBotMessage = getInitialMessage();
+                setMessages([initialBotMessage]);
+                const selectedLanguageName = LANGUAGES[language];
+                chatRef.current = startChat(apiKey, selectedLanguageName, [
+                    { role: 'user', parts: [{ text: "Initial Greeting" }] },
+                    { role: 'model', parts: [{ text: initialBotMessage.text }] }
+                ]);
+            }, [language, apiKey]);
+            
+            const handleApiKeySubmit = (key) => {
+                setApiKey(key);
+                sessionStorage.setItem('gemini-api-key', key);
+            };
+
+            const showToast = (message) => {
+                setToast({ show: true, message });
+            };
+
+            const dismissToast = () => {
+                setToast({ show: false, message: '' });
+            };
+
+            const handleCategorySelect = (categoryTitle) => {
+                if (!apiKey) return;
+                setView('chat');
+                const topic = categoryTitle.split(' ').slice(1).join(' ');
+
+                let greetingText = '';
+                if (language === 'hi-IN') {
+                    greetingText = `नमस्ते! मैं ${topic} के बारे में आपकी मदद कर सकता हूँ। आप क्या जानना चाहेंगे?`;
+                } else {
+                    greetingText = `Hi! I can help you with ${topic}. What would you like to know?`;
+                }
+
+                const initialBotMessage = getInitialMessage();
+                const categoryGreetingMessage = { role: 'model', text: greetingText };
+
+                setMessages([initialBotMessage, categoryGreetingMessage]);
+                
+                const history = [
+                    { role: 'user', parts: [{ text: "Initial Greeting" }] }, 
+                    { role: 'model', parts: [{ text: initialBotMessage.text }] },
+                    { role: 'user', parts: [{ text: `I have a question about ${topic}.` }] },
+                    { role: 'model', parts: [{ text: categoryGreetingMessage.text }] }
+                ];
+
+                const selectedLanguageName = LANGUAGES[language];
+                chatRef.current = startChat(apiKey, selectedLanguageName, history);
+            };
+            
+            const handleGoHome = () => {
+                setView('home');
+            };
+
+            const handleClearChat = () => {
+                if (!apiKey) return;
+                const initialBotMessage = getInitialMessage();
+                setMessages([initialBotMessage]);
+                setSuggestions([]);
+                const selectedLanguageName = LANGUAGES[language];
+                chatRef.current = startChat(apiKey, selectedLanguageName, [
+                    { role: 'user', parts: [{ text: "Initial Greeting" }] }, 
+                    { role: 'model', parts: [{ text: initialBotMessage.text }] }
+                ]);
+            };
+
+            const handleCopy = (textToCopy) => {
+                navigator.clipboard.writeText(textToCopy).then(() => {
+                    showToast("Copied to clipboard!");
+                }).catch(err => {
+                    console.error('Failed to copy text: ', err);
+                    showToast("Failed to copy.");
+                });
+            };
+            
+            const handleSummarize = async (textToSummarize) => {
+                if (!apiKey) return;
+                setIsLoading(true);
+                const selectedLanguageName = LANGUAGES[language];
+                
+                try {
+                    const summaryText = await generateSummary(apiKey, textToSummarize, selectedLanguageName);
+                    const summaryMessage = { role: 'model', text: `**Summary:** ${summaryText}` };
+                    setMessages(prev => [...prev, summaryMessage]);
+                } catch (error) {
+                    console.error("Summarize API call failed:", error);
+                    const errorMessage = { role: 'model', text: `Sorry, I couldn't summarize that. Please try again.` };
+                    setMessages(prev => [...prev, errorMessage]);
+                } finally {
+                    setIsLoading(false);
+                }
+            };
+
+            const handleGetSuggestions = async () => {
+                if (!chatRef.current || !apiKey) return;
+                setIsLoading(true);
+                setSuggestions([]);
+                const selectedLanguageName = LANGUAGES[language];
+                
+                try {
+                    const history = await chatRef.current.getHistory();
+                    const suggestionsArray = await generateSuggestions(apiKey, history, selectedLanguageName);
+                    setSuggestions(suggestionsArray);
+                } catch (error) {
+                    console.error("Suggestions API call failed:", error);
+                    showToast("Could not get suggestions.");
+                } finally {
+                    setIsLoading(false);
+                }
+            };
+            
+            const handleRegenerate = async () => {
+                if (isLoading || !apiKey) return;
+
+                let lastUserMessage = null;
+                let lastUserMessageIndex = -1;
+
+                for (let i = messages.length - 1; i >= 0; i--) {
+                    if (messages[i].role === 'user') {
+                        lastUserMessage = messages[i];
+                        lastUserMessageIndex = i;
+                        break;
+                    }
+                }
+
+                if (lastUserMessage) {
+                    setMessages(prev => prev.slice(0, lastUserMessageIndex + 1));
+                    
+                    const selectedLanguageName = LANGUAGES[language];
+                    const history = await chatRef.current?.getHistory() ?? [];
+                    const userHistory = history.filter(m => m.role === 'user');
+                    
+                    chatRef.current = startChat(apiKey, selectedLanguageName, history.slice(0, userHistory.length * 2 - 1));
+
+                    await handleSendMessage(lastUserMessage.text, true);
+                } else {
+                    showToast("Could not find a previous message to regenerate.");
+                }
+            };
+
+            const handleFeedback = () => {
+                showToast("Thank you for your feedback!");
+            };
+
+            const handleSendMessage = async (userInput, isRegenerating = false) => {
+                if (isLoading || !chatRef.current) return;
+                setSuggestions([]);
+
+                if (!isRegenerating) {
+                    const userMessage = { role: 'user', text: userInput };
+                    setMessages(prev => [...prev, userMessage]);
+                }
+                
+                const botMessagePlaceholder = { role: 'model', text: '' };
+                setMessages(prev => [...prev, botMessagePlaceholder]);
+                setIsLoading(true);
+
+                let fullBotResponse = '';
+                let stop = false;
+
+                try {
+                    const stream = await chatRef.current.sendMessageStream({ message: userInput });
+                    
+                    const stopStream = () => {
+                        stop = true;
+                        console.log("Stopping generation.");
+                        setIsLoading(false);
+                        setStopGenerating(() => () => {});
+                    };
+
+                    setStopGenerating(() => stopStream);
+
+                    for await (const chunk of stream) {
+                        if(stop) break;
+                        fullBotResponse += chunk.text;
+                        setMessages(prev => {
+                            const newMessages = [...prev];
+                            newMessages[newMessages.length - 1] = { ...newMessages[newMessages.length - 1], text: fullBotResponse };
+                            return newMessages;
+                        });
+                    }
+                } catch (error) {
+                    console.error("Failed to fetch from Gemini API:", error);
+                    const errorMessageText = error instanceof Error && error.message.includes('API key not valid')
+                        ? "Sorry, your API key is not valid. Please refresh and enter a valid key."
+                        : "Sorry, something went wrong. Please check your connection and try again.";
+                    
+                    const errorMessage = { role: 'model', text: errorMessageText };
+                    setMessages(prev => {
+                        const newMessages = [...prev];
+                        newMessages[newMessages.length - 1] = errorMessage;
+                        return newMessages;
+                    });
+                } finally {
+                    if (!stop) {
+                        setIsLoading(false);
+                        setStopGenerating(() => () => {});
+                    }
+                }
+            };
+
+            const handleSpeak = (text) => {
+                if ('speechSynthesis' in window) {
+                    const utterance = new SpeechSynthesisUtterance(text);
+                    utterance.lang = language;
+                    const voices = window.speechSynthesis.getVoices();
+                    utterance.voice = voices.find(voice => voice.lang === language) || voices.find(voice => voice.lang.startsWith(language.split('-')[0])) || null;
+                    window.speechSynthesis.cancel();
+                    window.speechSynthesis.speak(utterance);
+                } else {
+                    showToast("Sorry, your browser doesn't support text-to-speech.");
+                }
+            };
+            
+            useEffect(() => {
+                if ('speechSynthesis' in window && window.speechSynthesis.getVoices().length === 0) {
+                    window.speechSynthesis.onvoiceschanged = () => {
+                        // Voices are loaded, no action needed here, just ensures they are loaded for handleSpeak
+                    };
+                }
+            }, []);
+
+            if (!apiKey) {
+                return React.createElement(ApiKeyModal, { onSubmit: handleApiKeySubmit });
+            }
+
+            return (
+                React.createElement("div", { className: "min-h-screen flex flex-col" },
+                    React.createElement(Header, {
+                        theme: theme,
+                        setTheme: setTheme,
+                        language: language,
+                        setLanguage: setLanguage,
+                        onHomeClick: handleGoHome
+                    }),
+                    React.createElement("main", { className: "flex-grow flex flex-col" },
+                        view === 'home' && React.createElement(HomePage, { onCategorySelect: handleCategorySelect, language: language }),
+                        view === 'chat' && (
+                            React.createElement(ChatWindow, {
+                                messages: messages,
+                                onSendMessage: handleSendMessage,
+                                language: language,
+                                onSpeak: handleSpeak,
+                                isLoading: isLoading,
+                                onClearChat: handleClearChat,
+                                onCopy: handleCopy,
+                                onSummarize: handleSummarize,
+                                onGetSuggestions: handleGetSuggestions,
+                                suggestions: suggestions,
+                                showToast: showToast,
+                                onStopGenerating: stopGenerating,
+                                onRegenerate: handleRegenerate,
+                                onFeedback: handleFeedback
+                            })
+                        )
+                    ),
+                    React.createElement(Footer, null),
+                    React.createElement(Toast, { message: toast.message, show: toast.show, onDismiss: dismissToast })
+                )
+            );
+        };
+
+        // From index.tsx
+        const rootElement = document.getElementById('root');
+        if (!rootElement) {
+            throw new Error("Could not find root element to mount to");
+        }
+
+        const root = ReactDOM.createRoot(rootElement);
+        root.render(
+            React.createElement(React.StrictMode, null,
+                React.createElement(App, null)
+            )
+        );
+    </script>
+</body>
+</html>
