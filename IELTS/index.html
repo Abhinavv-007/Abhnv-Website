@@ -30488,22 +30488,56 @@ Please change the parent <Route path="${parentPath}"> to <Route path="${parentPa
     return generateJSON("gemini-2.0-flash", prompt);
   });
   const generateWritingTask = (taskType) => __async(null, null, function* () {
-    var _a;
     const prompt = `Generate an IELTS Writing ${taskType === "task1" ? "Task 1" : "Task 2"} prompt.
   
   Requirements:
-  1. Return ONLY the prompt text.
-  2. Do NOT use markdown formatting (no bold **, no italics *).
-  3. Do NOT include "Subject:" or "Topic:" prefixes.
-  4. Just give the raw question/chart description.
-  ${taskType === "task1" ? "For Task 1, describe a chart, graph, or process." : "For Task 2, provide an essay question on a social issue."}
+  1. Return a JSON object.
+  2. For Task 1: Include 'chartData' for a bar or line chart.
+  3. For Task 2: 'chartData' should be null.
+  4. 'promptText': The text description/question.
+  
+  Output JSON Schema:
+  {
+    "promptText": "string",
+    "chartData": {
+      "type": "bar" | "line",
+      "title": "string",
+      "labels": ["string"],
+      "datasets": [
+        { "label": "string", "data": [number] }
+      ]
+    } | null
+  }
   `;
-    const ai = getClient();
-    const response = yield ai.models.generateContent({
-      model: "gemini-2.0-flash",
-      contents: prompt
-    });
-    return ((_a = response.text) == null ? void 0 : _a.replace(/\*\*/g, "").replace(/\*/g, "").trim()) || "Failed to generate prompt.";
+    const schema = {
+      type: Type.OBJECT,
+      properties: {
+        promptText: { type: Type.STRING },
+        chartData: {
+          type: Type.OBJECT,
+          properties: {
+            type: { type: Type.STRING, enum: ["bar", "line"] },
+            title: { type: Type.STRING },
+            labels: { type: Type.ARRAY, items: { type: Type.STRING } },
+            datasets: {
+              type: Type.ARRAY,
+              items: {
+                type: Type.OBJECT,
+                properties: {
+                  label: { type: Type.STRING },
+                  data: { type: Type.ARRAY, items: { type: Type.NUMBER } }
+                },
+                required: ["label", "data"]
+              }
+            }
+          },
+          required: ["type", "title", "labels", "datasets"],
+          nullable: true
+        }
+      },
+      required: ["promptText"]
+    };
+    return yield generateJSON("gemini-2.0-flash", prompt, schema);
   });
   const evaluateWriting = (essay, taskType, promptText) => __async(null, null, function* () {
     const prompt = `
@@ -30530,9 +30564,11 @@ Please change the parent <Route path="${parentPath}"> to <Route path="${parentPa
         lexicalResource: { type: Type.NUMBER },
         grammar: { type: Type.NUMBER },
         feedback: { type: Type.STRING },
-        improvedVersion: { type: Type.STRING }
+        improvedVersion: { type: Type.STRING },
+        strengths: { type: Type.ARRAY, items: { type: Type.STRING } },
+        weaknesses: { type: Type.ARRAY, items: { type: Type.STRING } }
       },
-      required: ["band", "taskResponse", "coherence", "lexicalResource", "grammar", "feedback", "improvedVersion"]
+      required: ["band", "taskResponse", "coherence", "lexicalResource", "grammar", "feedback", "improvedVersion", "strengths", "weaknesses"]
     });
   });
   const generateSpeakingCues = () => __async(null, null, function* () {
@@ -30898,9 +30934,38 @@ Please change the parent <Route path="${parentPath}"> to <Route path="${parentPa
       ] })
     ] });
   };
+  const ChartRenderer = ({ data }) => {
+    if (!data) return null;
+    const { type, title, labels, datasets } = data;
+    const colors = ["bg-blue-500", "bg-emerald-500", "bg-amber-500", "bg-purple-500"];
+    return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "mt-4 p-4 bg-slate-50 dark:bg-white/5 rounded-xl border border-slate-200 dark:border-white/10", children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsx("h5", { className: "text-xs font-bold uppercase text-slate-500 mb-4 text-center", children: title }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "flex items-end justify-between h-48 gap-2 pb-6 border-b border-slate-200 dark:border-white/10 relative", children: labels.map((label, i) => /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex-1 flex flex-col justify-end gap-1 h-full group relative", children: [
+        datasets.map((ds, j) => {
+          const maxVal = Math.max(...datasets.flatMap((d) => d.data));
+          const height = ds.data[i] / maxVal * 100;
+          return /* @__PURE__ */ jsxRuntimeExports.jsx(
+            "div",
+            {
+              className: `w-full rounded-t-sm transition-all hover:opacity-80 ${colors[j % colors.length]}`,
+              style: { height: `${height}%` },
+              children: /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "opacity-0 group-hover:opacity-100 absolute -top-6 left-1/2 -translate-x-1/2 text-[10px] bg-black text-white px-1 rounded", children: ds.data[i] })
+            },
+            j
+          );
+        }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "absolute -bottom-6 left-1/2 -translate-x-1/2 text-[10px] text-slate-500 whitespace-nowrap overflow-hidden text-ellipsis max-w-full text-center", children: label })
+      ] }, i)) }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "flex flex-wrap gap-4 mt-8 justify-center", children: datasets.map((ds, i) => /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-2 text-xs text-slate-600 dark:text-slate-400", children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: `w-3 h-3 rounded-full ${colors[i % colors.length]}` }),
+        ds.label
+      ] }, i)) })
+    ] });
+  };
   const WritingSection = () => {
+    var _a, _b;
     const [taskType, setTaskType] = reactExports.useState("task1");
-    const [prompt, setPrompt] = reactExports.useState("");
+    const [taskData, setTaskData] = reactExports.useState(null);
     const [response, setResponse] = reactExports.useState("");
     const [loading, setLoading] = reactExports.useState(false);
     const [evaluating, setEvaluating] = reactExports.useState(false);
@@ -30914,8 +30979,8 @@ Please change the parent <Route path="${parentPath}"> to <Route path="${parentPa
       setTimerActive(false);
       setTimeLeft(taskType === "task1" ? 20 * 60 : 40 * 60);
       try {
-        const text = yield generateWritingTask(taskType);
-        setPrompt(text);
+        const data = yield generateWritingTask(taskType);
+        setTaskData(data);
       } catch (error) {
         console.error("Failed to generate prompt", error);
       } finally {
@@ -30940,11 +31005,11 @@ Please change the parent <Route path="${parentPath}"> to <Route path="${parentPa
       return `${m}:${s < 10 ? "0" : ""}${s}`;
     };
     const handleEvaluate = () => __async(null, null, function* () {
-      if (!response.trim()) return;
+      if (!response.trim() || !taskData) return;
       setEvaluating(true);
       setTimerActive(false);
       try {
-        const result = yield evaluateWriting(taskType, prompt, response);
+        const result = yield evaluateWriting(taskType, taskData.promptText, response);
         setFeedback(result);
       } catch (error) {
         console.error("Evaluation failed", error);
@@ -30995,7 +31060,10 @@ Please change the parent <Route path="${parentPath}"> to <Route path="${parentPa
             loading ? /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "py-8 text-center", children: [
               /* @__PURE__ */ jsxRuntimeExports.jsx(LoaderCircle, { className: "animate-spin mx-auto text-violet-500 mb-2" }),
               /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-xs text-slate-500", children: "Generating prompt..." })
-            ] }) : /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "text-sm text-slate-600 dark:text-slate-300 leading-relaxed", children: prompt })
+            ] }) : taskData ? /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "space-y-4", children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "text-sm text-slate-600 dark:text-slate-300 leading-relaxed", children: taskData.promptText }),
+              taskData.chartData && /* @__PURE__ */ jsxRuntimeExports.jsx(ChartRenderer, { data: taskData.chartData })
+            ] }) : /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "text-sm text-slate-500 italic", children: "Failed to load task." })
           ] }),
           /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "bg-blue-50 dark:bg-blue-900/10 p-6 rounded-2xl border border-blue-100 dark:border-blue-900/30", children: [
             /* @__PURE__ */ jsxRuntimeExports.jsxs("h4", { className: "font-bold text-blue-700 dark:text-blue-400 mb-3 flex items-center gap-2", children: [
@@ -31078,19 +31146,19 @@ Please change the parent <Route path="${parentPath}"> to <Route path="${parentPa
                   /* @__PURE__ */ jsxRuntimeExports.jsx(CircleCheck, { size: 18 }),
                   " Strengths"
                 ] }),
-                /* @__PURE__ */ jsxRuntimeExports.jsx("ul", { className: "list-disc list-inside text-sm text-green-800 dark:text-green-300 space-y-1", children: feedback.strengths.map((s, i) => /* @__PURE__ */ jsxRuntimeExports.jsx("li", { children: s }, i)) })
+                /* @__PURE__ */ jsxRuntimeExports.jsx("ul", { className: "list-disc list-inside text-sm text-green-800 dark:text-green-300 space-y-1", children: ((_a = feedback.strengths) == null ? void 0 : _a.map((s, i) => /* @__PURE__ */ jsxRuntimeExports.jsx("li", { children: s }, i))) || /* @__PURE__ */ jsxRuntimeExports.jsx("li", { children: "No specific strengths noted." }) })
               ] }),
               /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "p-4 bg-amber-50 dark:bg-amber-900/10 rounded-xl border border-amber-100 dark:border-amber-900/30", children: [
                 /* @__PURE__ */ jsxRuntimeExports.jsxs("h4", { className: "font-bold text-amber-700 dark:text-amber-400 mb-2 flex items-center gap-2", children: [
                   /* @__PURE__ */ jsxRuntimeExports.jsx(CircleAlert, { size: 18 }),
                   " Improvements"
                 ] }),
-                /* @__PURE__ */ jsxRuntimeExports.jsx("ul", { className: "list-disc list-inside text-sm text-amber-800 dark:text-amber-300 space-y-1", children: feedback.weaknesses.map((w, i) => /* @__PURE__ */ jsxRuntimeExports.jsx("li", { children: w }, i)) })
+                /* @__PURE__ */ jsxRuntimeExports.jsx("ul", { className: "list-disc list-inside text-sm text-amber-800 dark:text-amber-300 space-y-1", children: ((_b = feedback.weaknesses) == null ? void 0 : _b.map((w, i) => /* @__PURE__ */ jsxRuntimeExports.jsx("li", { children: w }, i))) || /* @__PURE__ */ jsxRuntimeExports.jsx("li", { children: "No specific improvements noted." }) })
               ] })
             ] }),
             /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "bg-slate-50 dark:bg-black/20 p-6 rounded-xl", children: [
               /* @__PURE__ */ jsxRuntimeExports.jsx("h4", { className: "font-bold text-slate-800 dark:text-white mb-2", children: "Detailed Feedback" }),
-              /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-slate-600 dark:text-slate-400 text-sm leading-relaxed", children: feedback.detailed_feedback })
+              /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-slate-600 dark:text-slate-400 text-sm leading-relaxed", children: feedback.detailed_feedback || feedback.feedback })
             ] })
           ] })
         ] })
