@@ -30466,26 +30466,61 @@ Please change the parent <Route path="${parentPath}"> to <Route path="${parentPa
       return { audio: null, error: e.message || "Unknown TTS error" };
     }
   });
-  const generateReadingTest = () => __async(null, null, function* () {
-    const prompt = `Generate an IELTS Reading passage (approx 400 words) on an academic topic.
-  Include 5 questions. Types: 'true_false_not_given' and 'mcq'.
-  IMPORTANT: For each question, provide the 'correctAnswer' and a detailed 'explanation' quoting the relevant part of the text.
-  Output JSON format: 
-  { 
-      "title": "string", 
-      "passage": "string", 
-      "questions": [ 
-          { 
-              "id": "1", 
-              "type": "true_false_not_given"|"mcq", 
-              "text": "question text", 
-              "options": ["A", "B", "C"] (only for mcq), 
-              "correctAnswer": "string",
-              "explanation": "Quote from text: '...' This proves the answer."
-          } 
-      ] 
-  }`;
-    return generateJSON("gemini-2.0-flash", prompt);
+  const generateReadingTest = (passageNum = 1) => __async(null, null, function* () {
+    let topic = "";
+    let difficulty = "";
+    switch (passageNum) {
+      case 1:
+        topic = "Social Survival / General Interest";
+        difficulty = "Moderate";
+        break;
+      case 2:
+        topic = "Workplace / Training Context";
+        difficulty = "Hard";
+        break;
+      case 3:
+        topic = "General Academic / Complex Argument";
+        difficulty = "Very Hard";
+        break;
+      default:
+        topic = "General Interest";
+        difficulty = "Moderate";
+    }
+    const prompt = `Generate an IELTS Reading Passage (Passage ${passageNum} of 3).
+  Topic: ${topic}
+  Difficulty: ${difficulty}
+  
+  Requirements:
+  1. Passage Length: 700-900 words.
+  2. Generate exactly 15 questions.
+  3. Question Types: Mix of Multiple Choice, True/False/Not Given, and Matching Headings.
+  4. The text must be academic and challenging, suitable for IELTS.
+  5. IMPORTANT: The JSON key for the passage text must be "text", NOT "passage".
+  `;
+    const schema = {
+      type: Type.OBJECT,
+      properties: {
+        title: { type: Type.STRING },
+        text: { type: Type.STRING },
+        questions: {
+          type: Type.ARRAY,
+          items: {
+            type: Type.OBJECT,
+            properties: {
+              id: { type: Type.STRING },
+              text: { type: Type.STRING },
+              type: { type: Type.STRING, enum: ["mcq", "true_false", "matching"] },
+              options: { type: Type.ARRAY, items: { type: Type.STRING } },
+              correctAnswer: { type: Type.STRING },
+              explanation: { type: Type.STRING }
+            },
+            required: ["id", "text", "type", "correctAnswer", "explanation"]
+          }
+        }
+      },
+      required: ["title", "text", "questions"]
+    };
+    return yield generateJSON("gemini-2.0-flash", prompt, schema);
   });
   const generateWritingTask = (taskType) => __async(null, null, function* () {
     const prompt = `Generate an IELTS Writing ${taskType === "task1" ? "Task 1" : "Task 2"} prompt.
@@ -30544,6 +30579,21 @@ Please change the parent <Route path="${parentPath}"> to <Route path="${parentPa
   Act as a Senior IELTS Examiner. Evaluate the following ${taskType} essay based on the prompt: "${promptText}".
   Strictly follow IELTS band descriptors.
   
+  CRITICAL INSTRUCTIONS:
+  1. WORD COUNT CHECK:
+     - If Task 1 < 50 words OR Task 2 < 50 words: FORCE BAND 1.0.
+     - If Task 1 < 100 words OR Task 2 < 150 words: MAX BAND 4.0.
+     - If Task 1 < 150 words OR Task 2 < 250 words: MAX BAND 5.5 for Task Response.
+  
+  2. RELEVANCE CHECK:
+     - If the essay is gibberish, random characters, or completely irrelevant to the prompt: FORCE BAND 0.
+     - If the essay is copied from the prompt: FORCE BAND 0.
+  
+  3. STRICT GRADING:
+     - Do NOT be generous. 
+     - Band 7.0+ requires sophisticated vocabulary and perfect structure.
+     - Band 8.0+ is near-native.
+  
   Essay: "${essay}"
   
   Return JSON with:
@@ -30554,6 +30604,8 @@ Please change the parent <Route path="${parentPath}"> to <Route path="${parentPa
   - grammar (0-9)
   - feedback (string, max 100 words)
   - improvedVersion (string): A full rewrite of the user's essay to make it a perfect Band 9 answer.
+  - strengths: string[]
+  - weaknesses: string[]
   `;
     return generateJSON("gemini-2.0-flash", prompt, {
       type: Type.OBJECT,
@@ -31011,6 +31063,18 @@ Please change the parent <Route path="${parentPath}"> to <Route path="${parentPa
       try {
         const result = yield evaluateWriting(taskType, taskData.promptText, response);
         setFeedback(result);
+        const historyItem = {
+          id: Date.now(),
+          date: (/* @__PURE__ */ new Date()).toLocaleDateString(),
+          type: taskType,
+          band: result.band,
+          score: result.band
+          // Normalize for dashboard
+        };
+        const savedHistory = localStorage.getItem("ielts_writing_history");
+        const currentHistory = savedHistory ? JSON.parse(savedHistory) : [];
+        const updatedHistory = [historyItem, ...currentHistory].slice(0, 10);
+        localStorage.setItem("ielts_writing_history", JSON.stringify(updatedHistory));
       } catch (error) {
         console.error("Evaluation failed", error);
       } finally {
@@ -31564,6 +31628,37 @@ Please change the parent <Route path="${parentPath}"> to <Route path="${parentPa
     const [finalScore, setFinalScore] = reactExports.useState(0);
     const [timeLeft, setTimeLeft] = reactExports.useState(60 * 60);
     const [timerActive, setTimerActive] = reactExports.useState(false);
+    const [showHistory, setShowHistory] = reactExports.useState(false);
+    const [history, setHistory] = reactExports.useState([]);
+    reactExports.useEffect(() => {
+      const saved = localStorage.getItem("ielts_reading_history");
+      if (saved) {
+        try {
+          setHistory(JSON.parse(saved));
+        } catch (e) {
+          console.error("Failed to parse history", e);
+        }
+      }
+    }, []);
+    const saveToHistory = (score, band) => {
+      const newResult = {
+        id: Date.now().toString(),
+        date: (/* @__PURE__ */ new Date()).toLocaleDateString(),
+        score,
+        band,
+        answers,
+        testData
+      };
+      const updated = [newResult, ...history].slice(0, 10);
+      setHistory(updated);
+      localStorage.setItem("ielts_reading_history", JSON.stringify(updated));
+    };
+    const clearHistory = () => {
+      if (confirm("Are you sure you want to clear your test history?")) {
+        setHistory([]);
+        localStorage.removeItem("ielts_reading_history");
+      }
+    };
     reactExports.useEffect(() => {
       let interval;
       if (timerActive && timeLeft > 0 && !submitted) {
@@ -31621,198 +31716,243 @@ Please change the parent <Route path="${parentPath}"> to <Route path="${parentPa
     };
     const calculateScore = () => {
       let correct = 0;
+      let totalQuestions = 0;
       Object.values(testData).forEach((part) => {
         part.questions.forEach((q) => {
+          totalQuestions++;
           const userAns = normalizeAnswer(answers[q.id] || "");
           const correctAns = normalizeAnswer(q.correctAnswer);
           if (userAns === correctAns) correct++;
         });
       });
+      const accuracy = totalQuestions > 0 ? correct / totalQuestions : 0;
+      let band = 0;
+      if (accuracy >= 0.97) band = 9;
+      else if (accuracy >= 0.92) band = 8.5;
+      else if (accuracy >= 0.87) band = 8;
+      else if (accuracy >= 0.8) band = 7.5;
+      else if (accuracy >= 0.75) band = 7;
+      else if (accuracy >= 0.65) band = 6.5;
+      else if (accuracy >= 0.57) band = 6;
+      else if (accuracy >= 0.45) band = 5.5;
+      else if (accuracy >= 0.37) band = 5;
+      else if (accuracy >= 0.32) band = 4.5;
+      else if (accuracy >= 0.25) band = 4;
+      else band = 3.5;
       setFinalScore(correct);
       setSubmitted(true);
       setTimerActive(false);
+      saveToHistory(correct, band);
     };
     const currentTest = testData[currentPassage];
-    return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "max-w-5xl mx-auto space-y-8 animate-in fade-in duration-500", children: [
-      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center justify-between mb-8 bg-white dark:bg-white/5 p-6 rounded-2xl border border-slate-200 dark:border-white/10 shadow-sm", children: [
+    return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "max-w-4xl mx-auto space-y-8 animate-in fade-in duration-500", children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center justify-between mb-8", children: [
         /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
-          /* @__PURE__ */ jsxRuntimeExports.jsx("h2", { className: "text-3xl font-black text-slate-900 dark:text-white mb-2", children: "IELTS Reading Practice" }),
-          /* @__PURE__ */ jsxRuntimeExports.jsxs("p", { className: "text-slate-600 dark:text-slate-400", children: [
-            "Passage ",
-            currentPassage,
-            " of 3 • ~15 Questions"
-          ] })
+          /* @__PURE__ */ jsxRuntimeExports.jsx("h2", { className: "text-3xl font-black text-slate-900 dark:text-white mb-2", children: "IELTS Reading" }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-slate-600 dark:text-slate-400", children: "Academic Reading Practice" })
         ] }),
-        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-6", children: [
-          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: `flex items-center gap-2 text-2xl font-mono font-bold ${timeLeft < 300 ? "text-red-500 animate-pulse" : "text-slate-700 dark:text-slate-200"}`, children: [
-            /* @__PURE__ */ jsxRuntimeExports.jsx(Timer, {}),
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex gap-2", children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx(
+            "button",
+            {
+              onClick: () => setShowHistory(!showHistory),
+              className: "px-4 py-2 rounded-lg bg-slate-200 dark:bg-white/10 text-slate-700 dark:text-white font-bold text-sm hover:bg-slate-300 dark:hover:bg-white/20 transition-colors",
+              children: showHistory ? "Back to Test" : "History"
+            }
+          ),
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "bg-slate-200 dark:bg-white/10 px-4 py-2 rounded-lg font-mono font-bold text-slate-700 dark:text-white flex items-center gap-2", children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx(Timer, { size: 16, className: timeLeft < 300 ? "text-red-500 animate-pulse" : "" }),
             formatTime(timeLeft)
-          ] }),
-          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "flex gap-2", children: [1, 2, 3].map((p) => /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: `h-2 w-8 rounded-full transition-colors ${p <= currentPassage ? "bg-emerald-500" : "bg-slate-200 dark:bg-white/10"}` }, p)) })
-        ] })
-      ] }),
-      error && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "p-4 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded-xl border border-red-200 dark:border-red-900/30 flex items-center gap-3", children: [
-        /* @__PURE__ */ jsxRuntimeExports.jsx(CircleAlert, { size: 20 }),
-        /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-sm", children: error }),
-        /* @__PURE__ */ jsxRuntimeExports.jsx("button", { onClick: () => loadPassage(currentPassage), className: "underline font-bold hover:text-red-700 ml-auto", children: "Retry" })
-      ] }),
-      loading && !testData[currentPassage] ? /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex flex-col items-center justify-center py-20 space-y-4", children: [
-        /* @__PURE__ */ jsxRuntimeExports.jsx(LoaderCircle, { className: "animate-spin text-emerald-500", size: 48 }),
-        /* @__PURE__ */ jsxRuntimeExports.jsxs("p", { className: "text-slate-500 font-medium animate-pulse", children: [
-          "Generating Reading Passage ",
-          currentPassage,
-          "..."
-        ] })
-      ] }) : currentTest ? /* @__PURE__ */ jsxRuntimeExports.jsx(jsxRuntimeExports.Fragment, { children: !submitted ? /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "grid grid-cols-1 lg:grid-cols-2 gap-8", children: [
-        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "bg-white dark:bg-white/5 p-8 rounded-2xl border border-slate-200 dark:border-white/10 h-[80vh] overflow-y-auto shadow-inner", children: [
-          /* @__PURE__ */ jsxRuntimeExports.jsx("h3", { className: "text-2xl font-bold mb-6 text-slate-900 dark:text-white sticky top-0 bg-white dark:bg-[#121212] py-2 border-b border-slate-100 dark:border-white/10", children: currentTest.title }),
-          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "prose dark:prose-invert max-w-none text-slate-700 dark:text-slate-300 leading-relaxed font-serif text-lg", children: currentTest.text.split("\n").map((para, i) => /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "mb-4", children: para }, i)) })
-        ] }),
-        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "space-y-6 h-[80vh] overflow-y-auto pr-2", children: [
-          currentTest.questions.map((q, i) => /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "p-6 rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5", children: [
-            /* @__PURE__ */ jsxRuntimeExports.jsxs("p", { className: "font-medium text-slate-800 dark:text-slate-200 mb-4", children: [
-              /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { className: "font-bold text-emerald-500 mr-2", children: [
-                i + 1,
-                "."
-              ] }),
-              q.text
-            ] }),
-            q.type === "mcq" && q.options ? /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "space-y-3", children: q.options.map((opt) => /* @__PURE__ */ jsxRuntimeExports.jsxs("label", { className: `flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-all border ${answers[q.id] === opt ? "bg-emerald-500/20 border-emerald-400" : "border-transparent hover:bg-white/10"}`, children: [
-              /* @__PURE__ */ jsxRuntimeExports.jsx(
-                "input",
-                {
-                  type: "radio",
-                  name: q.id,
-                  value: opt,
-                  onChange: (e) => setAnswers(__spreadProps(__spreadValues({}, answers), { [q.id]: e.target.value })),
-                  checked: answers[q.id] === opt,
-                  className: "w-5 h-5 text-emerald-500 accent-emerald-500"
-                }
-              ),
-              /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-slate-700 dark:text-slate-300", children: opt })
-            ] }, opt)) }) : /* @__PURE__ */ jsxRuntimeExports.jsx(
-              "input",
-              {
-                type: "text",
-                className: "w-full p-4 rounded-xl border border-slate-300 dark:border-white/10 bg-white dark:bg-black text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500 outline-none transition-all",
-                placeholder: "Type answer here...",
-                value: answers[q.id] || "",
-                onChange: (e) => setAnswers(__spreadProps(__spreadValues({}, answers), { [q.id]: e.target.value }))
-              }
-            )
-          ] }, q.id)),
-          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex flex-col gap-4 pt-4", children: [
-            /* @__PURE__ */ jsxRuntimeExports.jsx(
-              "button",
-              {
-                onClick: handleNextPassage,
-                className: "w-full bg-emerald-600 hover:bg-emerald-700 text-white py-4 rounded-xl font-bold flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/30 transition-all transform active:scale-[0.98]",
-                children: currentPassage < 3 ? /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
-                  "Next Passage ",
-                  /* @__PURE__ */ jsxRuntimeExports.jsx(ArrowRight, { size: 20 })
-                ] }) : /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
-                  /* @__PURE__ */ jsxRuntimeExports.jsx(CircleCheckBig, { size: 20 }),
-                  " Finish Test"
-                ] })
-              }
-            ),
-            /* @__PURE__ */ jsxRuntimeExports.jsxs(
-              "button",
-              {
-                onClick: () => {
-                  if (confirm("Are you sure you want to finish early? You will be scored on what you have completed so far.")) calculateScore();
-                },
-                className: "w-full bg-slate-200 hover:bg-slate-300 dark:bg-white/10 dark:hover:bg-white/20 text-slate-700 dark:text-slate-300 py-3 rounded-xl font-bold flex items-center justify-center gap-2 transition-colors",
-                children: [
-                  /* @__PURE__ */ jsxRuntimeExports.jsx(TriangleAlert, { size: 18 }),
-                  " Finish Early & Get Score"
-                ]
-              }
-            )
           ] })
         ] })
-      ] }) : (
-        /* Results View */
-        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "mt-8 space-y-6 max-w-3xl mx-auto", children: [
-          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "p-8 bg-emerald-50 dark:bg-white/5 rounded-3xl text-center border border-emerald-100 dark:border-white/10 shadow-xl", children: [
-            /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "text-sm text-slate-500 font-bold uppercase tracking-wider mb-2", children: "Projected Band Score" }),
-            /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "text-6xl font-black text-emerald-600 dark:text-emerald-400 mb-4", children: (() => {
-              let correct = 0;
-              let total = 0;
-              Object.values(testData).forEach((part) => {
-                part.questions.forEach((q) => {
-                  total++;
-                  if (normalizeAnswer(answers[q.id] || "") === normalizeAnswer(q.correctAnswer)) correct++;
-                });
-              });
-              const accuracy = total > 0 ? correct / total : 0;
-              let band = 0;
-              if (accuracy >= 0.97) band = 9;
-              else if (accuracy >= 0.92) band = 8.5;
-              else if (accuracy >= 0.87) band = 8;
-              else if (accuracy >= 0.8) band = 7.5;
-              else if (accuracy >= 0.75) band = 7;
-              else if (accuracy >= 0.65) band = 6.5;
-              else if (accuracy >= 0.57) band = 6;
-              else if (accuracy >= 0.45) band = 5.5;
-              else if (accuracy >= 0.37) band = 5;
-              else if (accuracy >= 0.32) band = 4.5;
-              else if (accuracy >= 0.25) band = 4;
-              else band = 3.5;
-              return band;
-            })() }),
-            /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "inline-block bg-white dark:bg-black px-6 py-2 rounded-full text-sm font-bold shadow-sm border border-white/10", children: [
-              "Raw Score: ",
-              finalScore,
-              " Correct"
-            ] }),
-            /* @__PURE__ */ jsxRuntimeExports.jsxs("p", { className: "mt-4 text-slate-500 text-sm", children: [
-              "Based on ",
-              Object.keys(testData).length,
-              " passage(s) completed."
+      ] }),
+      showHistory ? /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "bg-white dark:bg-white/5 p-6 rounded-2xl border border-slate-200 dark:border-white/10", children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex justify-between items-center mb-6", children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx("h3", { className: "text-xl font-bold text-slate-900 dark:text-white", children: "Test History" }),
+          history.length > 0 && /* @__PURE__ */ jsxRuntimeExports.jsxs("button", { onClick: clearHistory, className: "text-xs text-red-500 hover:text-red-400 flex items-center gap-1", children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx(TriangleAlert, { size: 12 }),
+            " Clear History"
+          ] })
+        ] }),
+        history.length === 0 ? /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "text-center py-12 text-slate-500", children: "No test history available yet." }) : /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "space-y-4", children: history.map((item) => /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center justify-between p-4 bg-slate-50 dark:bg-black/20 rounded-xl border border-slate-100 dark:border-white/5", children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "font-bold text-slate-800 dark:text-white", children: item.date }),
+            /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "text-xs text-slate-500", children: [
+              "Score: ",
+              item.score,
+              " / 40"
             ] })
           ] }),
-          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "space-y-8", children: Object.entries(testData).map(([part, data]) => {
-            const testPart = data;
-            return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "border-t border-slate-200 dark:border-white/10 pt-8 first:border-0 first:pt-0", children: [
-              /* @__PURE__ */ jsxRuntimeExports.jsxs("h3", { className: "font-bold text-xl mb-4 text-slate-800 dark:text-white", children: [
-                "Passage ",
-                part,
-                ": ",
-                testPart.title
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "text-2xl font-black text-emerald-500", children: [
+            "Band ",
+            item.band
+          ] })
+        ] }, item.id)) })
+      ] }) : /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "flex gap-2 justify-end mb-6", children: [1, 2, 3].map((p) => /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: `h-2 w-8 rounded-full transition-colors ${p <= currentPassage ? "bg-emerald-500" : "bg-slate-200 dark:bg-white/10"}` }, p)) }),
+        error && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "p-4 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded-xl border border-red-200 dark:border-red-900/30 flex items-center gap-3", children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx(CircleAlert, { size: 20 }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-sm", children: error }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("button", { onClick: () => loadPassage(currentPassage), className: "underline font-bold hover:text-red-700 ml-auto", children: "Retry" })
+        ] }),
+        loading && !testData[currentPassage] ? /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex flex-col items-center justify-center py-20 space-y-4", children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx(LoaderCircle, { className: "animate-spin text-emerald-500", size: 48 }),
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("p", { className: "text-slate-500 font-medium animate-pulse", children: [
+            "Generating Reading Passage ",
+            currentPassage,
+            "..."
+          ] })
+        ] }) : currentTest ? /* @__PURE__ */ jsxRuntimeExports.jsx(jsxRuntimeExports.Fragment, { children: !submitted ? /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "grid grid-cols-1 lg:grid-cols-2 gap-8", children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "bg-white dark:bg-white/5 p-8 rounded-2xl border border-slate-200 dark:border-white/10 h-[80vh] overflow-y-auto shadow-inner", children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx("h3", { className: "text-2xl font-bold mb-6 text-slate-900 dark:text-white sticky top-0 bg-white dark:bg-[#121212] py-2 border-b border-slate-100 dark:border-white/10", children: currentTest.title }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "prose dark:prose-invert max-w-none text-slate-700 dark:text-slate-300 leading-relaxed font-serif text-lg", children: currentTest.text.split("\n").map((para, i) => /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "mb-4", children: para }, i)) })
+          ] }),
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "space-y-6 h-[80vh] overflow-y-auto pr-2", children: [
+            currentTest.questions.map((q, i) => /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "p-6 rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-white/5", children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsxs("p", { className: "font-medium text-slate-800 dark:text-slate-200 mb-4", children: [
+                /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { className: "font-bold text-emerald-500 mr-2", children: [
+                  i + 1,
+                  "."
+                ] }),
+                q.text
               ] }),
-              /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "space-y-4", children: testPart.questions.map((q, i) => {
-                const userAns = normalizeAnswer(answers[q.id] || "");
-                const correctAns = normalizeAnswer(q.correctAnswer);
-                const isCorrect = userAns === correctAns;
-                return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: `p-4 rounded-xl border ${isCorrect ? "border-green-500/30 bg-green-500/10" : "border-red-500/30 bg-red-500/10"}`, children: [
-                  /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex justify-between mb-2", children: [
-                    /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { className: "font-bold text-slate-700 dark:text-slate-200", children: [
-                      "Q",
-                      i + 1,
-                      ". ",
-                      q.text
+              q.type === "mcq" && q.options ? /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "space-y-3", children: q.options.map((opt) => /* @__PURE__ */ jsxRuntimeExports.jsxs("label", { className: `flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-all border ${answers[q.id] === opt ? "bg-emerald-500/20 border-emerald-400" : "border-transparent hover:bg-white/10"}`, children: [
+                /* @__PURE__ */ jsxRuntimeExports.jsx(
+                  "input",
+                  {
+                    type: "radio",
+                    name: q.id,
+                    value: opt,
+                    onChange: (e) => setAnswers(__spreadProps(__spreadValues({}, answers), { [q.id]: e.target.value })),
+                    checked: answers[q.id] === opt,
+                    className: "w-5 h-5 text-emerald-500 accent-emerald-500"
+                  }
+                ),
+                /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-slate-700 dark:text-slate-300", children: opt })
+              ] }, opt)) }) : /* @__PURE__ */ jsxRuntimeExports.jsx(
+                "input",
+                {
+                  type: "text",
+                  className: "w-full p-4 rounded-xl border border-slate-300 dark:border-white/10 bg-white dark:bg-black text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500 outline-none transition-all",
+                  placeholder: "Type answer here...",
+                  value: answers[q.id] || "",
+                  onChange: (e) => setAnswers(__spreadProps(__spreadValues({}, answers), { [q.id]: e.target.value }))
+                }
+              )
+            ] }, q.id)),
+            /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex flex-col gap-4 pt-4", children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsx(
+                "button",
+                {
+                  onClick: handleNextPassage,
+                  className: "w-full bg-emerald-600 hover:bg-emerald-700 text-white py-4 rounded-xl font-bold flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/30 transition-all transform active:scale-[0.98]",
+                  children: currentPassage < 3 ? /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
+                    "Next Passage ",
+                    /* @__PURE__ */ jsxRuntimeExports.jsx(ArrowRight, { size: 20 })
+                  ] }) : /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
+                    /* @__PURE__ */ jsxRuntimeExports.jsx(CircleCheckBig, { size: 20 }),
+                    " Finish Test"
+                  ] })
+                }
+              ),
+              /* @__PURE__ */ jsxRuntimeExports.jsxs(
+                "button",
+                {
+                  onClick: () => {
+                    if (confirm("Are you sure you want to finish early? You will be scored on what you have completed so far.")) calculateScore();
+                  },
+                  className: "w-full bg-slate-200 hover:bg-slate-300 dark:bg-white/10 dark:hover:bg-white/20 text-slate-700 dark:text-slate-300 py-3 rounded-xl font-bold flex items-center justify-center gap-2 transition-colors",
+                  children: [
+                    /* @__PURE__ */ jsxRuntimeExports.jsx(TriangleAlert, { size: 18 }),
+                    " Finish Early & Get Score"
+                  ]
+                }
+              )
+            ] })
+          ] })
+        ] }) : (
+          /* Results View */
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "mt-8 space-y-6 max-w-3xl mx-auto", children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "p-8 bg-emerald-50 dark:bg-white/5 rounded-3xl text-center border border-emerald-100 dark:border-white/10 shadow-xl", children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "text-sm text-slate-500 font-bold uppercase tracking-wider mb-2", children: "Projected Band Score" }),
+              /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "text-6xl font-black text-emerald-600 dark:text-emerald-400 mb-4", children: (() => {
+                let correct = 0;
+                let total = 0;
+                Object.values(testData).forEach((part) => {
+                  part.questions.forEach((q) => {
+                    total++;
+                    if (normalizeAnswer(answers[q.id] || "") === normalizeAnswer(q.correctAnswer)) correct++;
+                  });
+                });
+                const accuracy = total > 0 ? correct / total : 0;
+                let band = 0;
+                if (accuracy >= 0.97) band = 9;
+                else if (accuracy >= 0.92) band = 8.5;
+                else if (accuracy >= 0.87) band = 8;
+                else if (accuracy >= 0.8) band = 7.5;
+                else if (accuracy >= 0.75) band = 7;
+                else if (accuracy >= 0.65) band = 6.5;
+                else if (accuracy >= 0.57) band = 6;
+                else if (accuracy >= 0.45) band = 5.5;
+                else if (accuracy >= 0.37) band = 5;
+                else if (accuracy >= 0.32) band = 4.5;
+                else if (accuracy >= 0.25) band = 4;
+                else band = 3.5;
+                return band;
+              })() }),
+              /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "inline-block bg-white dark:bg-black px-6 py-2 rounded-full text-sm font-bold shadow-sm border border-white/10", children: [
+                "Raw Score: ",
+                finalScore,
+                " Correct"
+              ] }),
+              /* @__PURE__ */ jsxRuntimeExports.jsxs("p", { className: "mt-4 text-slate-500 text-sm", children: [
+                "Based on ",
+                Object.keys(testData).length,
+                " passage(s) completed."
+              ] })
+            ] }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "space-y-8", children: Object.entries(testData).map(([part, data]) => {
+              const testPart = data;
+              return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "border-t border-slate-200 dark:border-white/10 pt-8 first:border-0 first:pt-0", children: [
+                /* @__PURE__ */ jsxRuntimeExports.jsxs("h3", { className: "font-bold text-xl mb-4 text-slate-800 dark:text-white", children: [
+                  "Passage ",
+                  part,
+                  ": ",
+                  testPart.title
+                ] }),
+                /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "space-y-4", children: testPart.questions.map((q, i) => {
+                  const userAns = normalizeAnswer(answers[q.id] || "");
+                  const correctAns = normalizeAnswer(q.correctAnswer);
+                  const isCorrect = userAns === correctAns;
+                  return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: `p-4 rounded-xl border ${isCorrect ? "border-green-500/30 bg-green-500/10" : "border-red-500/30 bg-red-500/10"}`, children: [
+                    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex justify-between mb-2", children: [
+                      /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { className: "font-bold text-slate-700 dark:text-slate-200", children: [
+                        "Q",
+                        i + 1,
+                        ". ",
+                        q.text
+                      ] }),
+                      isCorrect ? /* @__PURE__ */ jsxRuntimeExports.jsx(CircleCheckBig, { size: 16, className: "text-green-500" }) : /* @__PURE__ */ jsxRuntimeExports.jsx(CircleAlert, { size: 16, className: "text-red-500" })
                     ] }),
-                    isCorrect ? /* @__PURE__ */ jsxRuntimeExports.jsx(CircleCheckBig, { size: 16, className: "text-green-500" }) : /* @__PURE__ */ jsxRuntimeExports.jsx(CircleAlert, { size: 16, className: "text-red-500" })
-                  ] }),
-                  /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "text-sm grid grid-cols-2 gap-4", children: [
-                    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
-                      /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-xs text-slate-500 uppercase block", children: "Your Answer" }),
-                      /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: isCorrect ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400", children: answers[q.id] || "(No Answer)" })
+                    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "text-sm grid grid-cols-2 gap-4", children: [
+                      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
+                        /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-xs text-slate-500 uppercase block", children: "Your Answer" }),
+                        /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: isCorrect ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400", children: answers[q.id] || "(No Answer)" })
+                      ] }),
+                      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
+                        /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-xs text-slate-500 uppercase block", children: "Correct Answer" }),
+                        /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-slate-800 dark:text-white font-medium", children: q.correctAnswer })
+                      ] })
                     ] }),
-                    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
-                      /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-xs text-slate-500 uppercase block", children: "Correct Answer" }),
-                      /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-slate-800 dark:text-white font-medium", children: q.correctAnswer })
-                    ] })
-                  ] }),
-                  /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "mt-2 text-xs text-slate-500 italic border-t border-black/5 dark:border-white/5 pt-2", children: q.explanation })
-                ] }, q.id);
-              }) })
-            ] }, part);
-          }) }),
-          /* @__PURE__ */ jsxRuntimeExports.jsx("button", { onClick: () => window.location.reload(), className: "w-full py-4 text-emerald-500 font-bold hover:bg-emerald-500/10 rounded-xl transition-colors border border-transparent hover:border-emerald-500/30", children: "Start New Reading Test" })
-        ] })
-      ) }) : null
+                    /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "mt-2 text-xs text-slate-500 italic border-t border-black/5 dark:border-white/5 pt-2", children: q.explanation })
+                  ] }, q.id);
+                }) })
+              ] }, part);
+            }) }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx("button", { onClick: () => window.location.reload(), className: "w-full py-4 text-emerald-500 font-bold hover:bg-emerald-500/10 rounded-xl transition-colors border border-transparent hover:border-emerald-500/30", children: "Start New Reading Test" })
+          ] })
+        ) }) : null
+      ] })
     ] });
   };
   const VeoVisuals = () => {
@@ -32040,14 +32180,22 @@ Please change the parent <Route path="${parentPath}"> to <Route path="${parentPa
         to,
         className: `flex items-center gap-3 px-4 py-3 rounded-xl transition-all font-medium ${active ? "bg-white/10 text-cyan-400 border-r-2 border-cyan-400" : "text-slate-400 hover:bg-white/5 hover:text-white"}`,
         children: [
-          /* @__PURE__ */ jsxRuntimeExports.jsx(Icon2, { size: 18 }),
-          label
+          /* @__PURE__ */ jsxRuntimeExports.jsx(Icon2, { size: 20, strokeWidth: active ? 2.5 : 2 }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: label })
         ]
       }
     );
   };
   const Dashboard = ({ scores }) => {
     const { xp, level } = useXP();
+    const [listeningDone, setListeningDone] = reactExports.useState(false);
+    const [writingDone, setWritingDone] = reactExports.useState(false);
+    reactExports.useEffect(() => {
+      const lHistory = localStorage.getItem("ielts_listening_history");
+      if (lHistory && JSON.parse(lHistory).length > 0) setListeningDone(true);
+      const wHistory = localStorage.getItem("ielts_writing_history");
+      if (wHistory && JSON.parse(wHistory).length > 0) setWritingDone(true);
+    }, []);
     return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700", children: [
       /* @__PURE__ */ jsxRuntimeExports.jsxs("header", { className: "relative overflow-hidden bg-gradient-to-br from-neutral-900 via-neutral-900 to-black p-8 rounded-3xl text-white shadow-2xl border border-white/10 group", children: [
         /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "absolute top-0 right-0 -mt-10 -mr-10 w-64 h-64 bg-cyan-500/10 rounded-full blur-3xl group-hover:bg-cyan-500/20 transition-all duration-1000" }),
@@ -32087,20 +32235,21 @@ Please change the parent <Route path="${parentPath}"> to <Route path="${parentPa
           "Neural Optimization Plan"
         ] }),
         /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "space-y-4", children: [
-          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-4 p-4 bg-slate-50 dark:bg-white/5 rounded-2xl border border-slate-100 dark:border-white/5 hover:scale-[1.01] transition-transform cursor-pointer", children: [
-            /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "w-10 h-10 rounded-full bg-cyan-500/10 flex items-center justify-center text-cyan-600 dark:text-cyan-400", children: /* @__PURE__ */ jsxRuntimeExports.jsx(Volume2, { size: 20 }) }),
+          /* @__PURE__ */ jsxRuntimeExports.jsxs(Link, { to: "/listening", className: `flex items-center gap-4 p-4 rounded-2xl border transition-all ${listeningDone ? "bg-green-500/10 border-green-500/20 cursor-default" : "bg-slate-50 dark:bg-white/5 border-slate-100 dark:border-white/5 hover:scale-[1.01] cursor-pointer"}`, children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: `w-10 h-10 rounded-full flex items-center justify-center ${listeningDone ? "bg-green-500 text-white" : "bg-cyan-500/10 text-cyan-600 dark:text-cyan-400"}`, children: listeningDone ? /* @__PURE__ */ jsxRuntimeExports.jsx(CircleCheck, { size: 20 }) : /* @__PURE__ */ jsxRuntimeExports.jsx(Volume2, { size: 20 }) }),
             /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex-1", children: [
-              /* @__PURE__ */ jsxRuntimeExports.jsx("h4", { className: "font-bold text-slate-800 dark:text-white", children: "Listening: Part 3 Simulation" }),
-              /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-xs text-slate-500 dark:text-slate-400", children: "Improve multi-speaker tracking (+150 XP)" })
+              /* @__PURE__ */ jsxRuntimeExports.jsx("h4", { className: `font-bold ${listeningDone ? "text-green-600 dark:text-green-400" : "text-slate-800 dark:text-white"}`, children: listeningDone ? "Listening Simulation Complete" : "Listening: Part 3 Simulation" }),
+              /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-xs text-slate-500 dark:text-slate-400", children: listeningDone ? "Neural pathway optimized." : "Improve multi-speaker tracking (+150 XP)" })
             ] }),
-            /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "w-2 h-2 rounded-full bg-cyan-500 animate-pulse" })
+            !listeningDone && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "w-2 h-2 rounded-full bg-cyan-500 animate-pulse" })
           ] }),
-          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-4 p-4 bg-slate-50 dark:bg-white/5 rounded-2xl border border-slate-100 dark:border-white/5 hover:scale-[1.01] transition-transform cursor-pointer", children: [
-            /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "w-10 h-10 rounded-full bg-violet-500/10 flex items-center justify-center text-violet-600 dark:text-violet-400", children: /* @__PURE__ */ jsxRuntimeExports.jsx(PenTool, { size: 20 }) }),
+          /* @__PURE__ */ jsxRuntimeExports.jsxs(Link, { to: "/writing", className: `flex items-center gap-4 p-4 rounded-2xl border transition-all ${writingDone ? "bg-green-500/10 border-green-500/20 cursor-default" : "bg-slate-50 dark:bg-white/5 border-slate-100 dark:border-white/5 hover:scale-[1.01] cursor-pointer"}`, children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: `w-10 h-10 rounded-full flex items-center justify-center ${writingDone ? "bg-green-500 text-white" : "bg-violet-500/10 text-violet-600 dark:text-violet-400"}`, children: writingDone ? /* @__PURE__ */ jsxRuntimeExports.jsx(CircleCheck, { size: 20 }) : /* @__PURE__ */ jsxRuntimeExports.jsx(PenTool, { size: 20 }) }),
             /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex-1", children: [
-              /* @__PURE__ */ jsxRuntimeExports.jsx("h4", { className: "font-bold text-slate-800 dark:text-white", children: "Writing: Task 2 Outline" }),
-              /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-xs text-slate-500 dark:text-slate-400", children: "Structure your argument logic (+200 XP)" })
-            ] })
+              /* @__PURE__ */ jsxRuntimeExports.jsx("h4", { className: `font-bold ${writingDone ? "text-green-600 dark:text-green-400" : "text-slate-800 dark:text-white"}`, children: writingDone ? "Writing Task Complete" : "Writing: Task 2 Outline" }),
+              /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-xs text-slate-500 dark:text-slate-400", children: writingDone ? "Structure logic reinforced." : "Structure your argument logic (+200 XP)" })
+            ] }),
+            !writingDone && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "w-2 h-2 rounded-full bg-violet-500 animate-pulse" })
           ] })
         ] })
       ] })
@@ -32126,7 +32275,10 @@ Please change the parent <Route path="${parentPath}"> to <Route path="${parentPa
     const [onboarded, setOnboarded] = reactExports.useState(() => {
       return localStorage.getItem("ielts_ace_onboarded") === "true";
     });
-    const [scores, setScores] = reactExports.useState(null);
+    const [scores, setScores] = reactExports.useState(() => {
+      const saved = localStorage.getItem("ielts_scores");
+      return saved ? JSON.parse(saved) : null;
+    });
     const [hasKey, setHasKey] = reactExports.useState(false);
     const [xp, setXp] = reactExports.useState(0);
     const [level, setLevel] = reactExports.useState(1);
@@ -32166,6 +32318,7 @@ Please change the parent <Route path="${parentPath}"> to <Route path="${parentPa
     const toggleTheme = () => setIsDark(!isDark);
     const handleDiagnosticComplete = (results) => {
       setScores(results);
+      localStorage.setItem("ielts_scores", JSON.stringify(results));
       addXP(500);
       setOnboarded(true);
       localStorage.setItem("ielts_ace_onboarded", "true");
