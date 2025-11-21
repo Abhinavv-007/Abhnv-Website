@@ -31016,6 +31016,7 @@ Please change the parent <Route path="${parentPath}"> to <Route path="${parentPa
   };
   const WritingSection = () => {
     var _a, _b;
+    const { updateScore } = useScore();
     const [taskType, setTaskType] = reactExports.useState("task1");
     const [taskData, setTaskData] = reactExports.useState(null);
     const [response, setResponse] = reactExports.useState("");
@@ -31075,6 +31076,7 @@ Please change the parent <Route path="${parentPath}"> to <Route path="${parentPa
         const currentHistory = savedHistory ? JSON.parse(savedHistory) : [];
         const updatedHistory = [historyItem, ...currentHistory].slice(0, 10);
         localStorage.setItem("ielts_writing_history", JSON.stringify(updatedHistory));
+        updateScore("writing", result.band);
       } catch (error) {
         console.error("Evaluation failed", error);
       } finally {
@@ -31230,6 +31232,7 @@ Please change the parent <Route path="${parentPath}"> to <Route path="${parentPa
     ] });
   };
   const Listening = () => {
+    const { updateScore } = useScore();
     const [currentPart, setCurrentPart] = reactExports.useState(1);
     const [testData, setTestData] = reactExports.useState({});
     const [audioUrls, setAudioUrls] = reactExports.useState({});
@@ -31371,6 +31374,7 @@ Please change the parent <Route path="${parentPath}"> to <Route path="${parentPa
       else if (accuracy >= 0.25) band = 4;
       else band = 3.5;
       saveToHistory(correct, band);
+      updateScore("listening", band);
     };
     const resetTest = () => {
       setSubmitted(false);
@@ -32156,6 +32160,12 @@ Please change the parent <Route path="${parentPath}"> to <Route path="${parentPa
     level: 1
   });
   const useXP = () => reactExports.useContext(XPContext);
+  const ScoreContext = reactExports.createContext({
+    scores: null,
+    updateScore: () => {
+    }
+  });
+  const useScore = () => reactExports.useContext(ScoreContext);
   const NavItem = ({ to, icon: Icon2, label }) => {
     const location = useLocation();
     const active = location.pathname === to;
@@ -32219,7 +32229,21 @@ Please change the parent <Route path="${parentPath}"> to <Route path="${parentPa
           ] }),
           /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "flex gap-4 mt-8", children: /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "bg-white/5 backdrop-blur-md px-6 py-4 rounded-2xl border border-white/10 hover:bg-white/10 transition-all", children: [
             /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-[10px] text-cyan-300 uppercase font-bold block tracking-wider mb-1", children: "Projected Band" }),
-            /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-4xl font-black bg-clip-text text-transparent bg-gradient-to-r from-white to-cyan-200", children: scores ? ((scores.listening + scores.reading + scores.grammar) / 3 + 4).toFixed(1) : "N/A" })
+            /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-4xl font-black bg-clip-text text-transparent bg-gradient-to-r from-white to-cyan-200", children: scores ? (() => {
+              const sections = ["listening", "reading", "writing", "speaking"];
+              let total = 0;
+              let count = 0;
+              sections.forEach((section) => {
+                if (scores[section]) {
+                  total += scores[section];
+                  count++;
+                }
+              });
+              if (count === 0 && scores.grammar) {
+                return ((scores.listening + scores.reading + scores.grammar) / 3 + 4).toFixed(1);
+              }
+              return count > 0 ? (total / count).toFixed(1) : "N/A";
+            })() : "N/A" })
           ] }) })
         ] })
       ] }),
@@ -32369,7 +32393,12 @@ Please change the parent <Route path="${parentPath}"> to <Route path="${parentPa
         ] })
       ] });
     }
-    return /* @__PURE__ */ jsxRuntimeExports.jsx(ThemeContext.Provider, { value: { isDark, toggleTheme }, children: /* @__PURE__ */ jsxRuntimeExports.jsx(XPContext.Provider, { value: { xp, addXP, level }, children: /* @__PURE__ */ jsxRuntimeExports.jsxs(HashRouter, { children: [
+    const updateScore = (section, score) => {
+      const newScores = __spreadProps(__spreadValues({}, scores), { [section]: score });
+      setScores(newScores);
+      localStorage.setItem("ielts_scores", JSON.stringify(newScores));
+    };
+    return /* @__PURE__ */ jsxRuntimeExports.jsx(ThemeContext.Provider, { value: { isDark, toggleTheme }, children: /* @__PURE__ */ jsxRuntimeExports.jsx(XPContext.Provider, { value: { xp, addXP, level }, children: /* @__PURE__ */ jsxRuntimeExports.jsx(ScoreContext.Provider, { value: { scores, updateScore }, children: /* @__PURE__ */ jsxRuntimeExports.jsxs(HashRouter, { children: [
       /* @__PURE__ */ jsxRuntimeExports.jsx(ScrollToTop, {}),
       /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "min-h-screen bg-slate-50 dark:bg-black text-slate-900 dark:text-slate-100 transition-colors duration-300 pb-24 md:pb-0 font-sans selection:bg-cyan-500/30", children: !onboarded ? /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "p-4 max-w-4xl mx-auto min-h-screen flex flex-col justify-start pt-20", children: [
         /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "flex justify-end mb-4", children: /* @__PURE__ */ jsxRuntimeExports.jsx("button", { onClick: toggleTheme, className: "p-2 rounded-full bg-slate-200 dark:bg-white/10 hover:bg-slate-300 dark:hover:bg-white/20 transition-colors", children: isDark ? /* @__PURE__ */ jsxRuntimeExports.jsx(Sun, { size: 20 }) : /* @__PURE__ */ jsxRuntimeExports.jsx(Moon, { size: 20 }) }) }),
@@ -32423,7 +32452,7 @@ Please change the parent <Route path="${parentPath}"> to <Route path="${parentPa
           /* @__PURE__ */ jsxRuntimeExports.jsx(NavItem, { to: "/speaking", icon: Mic, label: "Speak" })
         ] })
       ] }) })
-    ] }) }) });
+    ] }) }) }) });
   };
   const mount = () => {
     const rootElement = document.getElementById("root");
