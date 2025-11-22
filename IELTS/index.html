@@ -31082,7 +31082,7 @@ Please change the parent <Route path="${parentPath}"> to <Route path="${parentPa
       }
       return () => clearInterval(interval);
     }, [timerActive, timeLeft]);
-    const formatTime2 = (seconds) => {
+    const formatTime = (seconds) => {
       const m = Math.floor(seconds / 60);
       const s = seconds % 60;
       return `${m}:${s < 10 ? "0" : ""}${s}`;
@@ -31201,7 +31201,7 @@ Please change the parent <Route path="${parentPath}"> to <Route path="${parentPa
                 /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: `flex items-center gap-2 font-mono font-bold ${timeLeft < 300 && timerActive ? "text-red-500 animate-pulse" : "text-slate-500"}`, children: [
                   /* @__PURE__ */ jsxRuntimeExports.jsx(Timer, { size: 16 }),
                   " ",
-                  formatTime2(timeLeft)
+                  formatTime(timeLeft)
                 ] }),
                 !timerActive && timeLeft > 0 && /* @__PURE__ */ jsxRuntimeExports.jsx("button", { onClick: () => setTimerActive(true), className: "text-xs bg-violet-100 dark:bg-violet-900/30 text-violet-600 dark:text-violet-300 px-3 py-1 rounded-full font-bold hover:bg-violet-200 transition-colors", children: "Start Timer" })
               ] })
@@ -31728,6 +31728,11 @@ Please change the parent <Route path="${parentPath}"> to <Route path="${parentPa
         setHistory([]);
         localStorage.removeItem("ielts_reading_history");
       }
+    };
+    const formatTime = (seconds) => {
+      const m = Math.floor(seconds / 60);
+      const s = seconds % 60;
+      return `${m}:${s < 10 ? "0" : ""}${s}`;
     };
     const loadPassage = (passageNum) => __async(null, null, function* () {
       setLoading(true);
