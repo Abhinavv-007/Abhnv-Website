@@ -31508,26 +31508,30 @@ Please change the parent <Route path="${parentPath}"> to <Route path="${parentPa
           "Generating Test Content Part ",
           currentPart,
           "..."
-        ] })
+        ] }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("button", { onClick: () => loadPart(currentPart), className: "mt-4 text-xs text-slate-400 hover:text-cyan-500 underline", children: "Stuck? Refresh Questions" })
       ] }) : currentTest ? /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
-        !submitted && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "sticky top-4 z-40 bg-slate-50/95 dark:bg-neutral-900/95 backdrop-blur-md p-4 rounded-2xl mb-8 flex flex-col items-center justify-center border border-slate-200 dark:border-white/10 shadow-xl ring-1 ring-black/5", children: [
-          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-3 w-full max-w-md", children: [
-            /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "mb-0 text-[10px] font-bold uppercase text-slate-400 tracking-widest shrink-0", children: "Audio" }),
+        !submitted && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "fixed top-20 left-0 right-0 mx-auto z-40 w-[95%] max-w-md bg-white/80 dark:bg-neutral-900/80 backdrop-blur-xl p-4 rounded-2xl shadow-2xl border border-white/20 dark:border-white/10 ring-1 ring-black/5 animate-in slide-in-from-top-4 duration-500", children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-3 w-full", children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "mb-0 text-[10px] font-bold uppercase text-slate-400 tracking-widest shrink-0 flex flex-col items-center gap-1", children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsx(Volume2, { size: 14 }),
+              /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: "Audio" })
+            ] }),
             audioLoading ? /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "w-full h-10 bg-slate-100 dark:bg-white/5 rounded-lg flex items-center justify-center gap-2 text-xs text-slate-500 animate-pulse border border-slate-200 dark:border-white/10", children: [
               /* @__PURE__ */ jsxRuntimeExports.jsx(LoaderCircle, { size: 14, className: "animate-spin text-cyan-500" }),
               " Generating Neural Audio..."
-            ] }) : audioUrls[currentPart] ? /* @__PURE__ */ jsxRuntimeExports.jsx("audio", { controls: true, src: audioUrls[currentPart], className: "w-full h-10 invert dark:invert-0" }) : /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "w-full flex gap-2", children: [
-              /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex-1 p-2 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-900/50 rounded text-[10px] text-yellow-700 dark:text-yellow-400 flex items-center justify-center", children: [
-                /* @__PURE__ */ jsxRuntimeExports.jsx(CircleAlert, { size: 12, className: "mr-1" }),
-                " Neural Audio Failed"
+            ] }) : audioUrls[currentPart] ? /* @__PURE__ */ jsxRuntimeExports.jsx("audio", { controls: true, src: audioUrls[currentPart], className: "w-full h-10 invert dark:invert-0" }) : /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "w-full flex flex-col gap-2", children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-2 text-[10px] text-red-500 bg-red-50 dark:bg-red-900/20 p-2 rounded border border-red-100 dark:border-red-900/30", children: [
+                /* @__PURE__ */ jsxRuntimeExports.jsx(TriangleAlert, { size: 12, className: "shrink-0" }),
+                "High quality audio generation via Gemini 2.5 Flash failed. Using browser fallback. Refresh to try again."
               ] }),
-              /* @__PURE__ */ jsxRuntimeExports.jsxs("button", { onClick: () => playBrowserTTS(currentTest.script), className: "flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-slate-200 hover:bg-slate-300 dark:bg-white/10 dark:hover:bg-white/20 text-slate-700 dark:text-slate-200 rounded-lg text-xs font-bold transition-colors", children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsxs("button", { onClick: () => playBrowserTTS(currentTest.script), className: "w-full flex items-center justify-center gap-2 px-3 py-2 bg-slate-200 hover:bg-slate-300 dark:bg-white/10 dark:hover:bg-white/20 text-slate-700 dark:text-slate-200 rounded-lg text-xs font-bold transition-colors", children: [
                 /* @__PURE__ */ jsxRuntimeExports.jsx(Play, { size: 14 }),
                 " Play Browser TTS"
               ] })
             ] })
           ] }),
-          audioUrls[currentPart] && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "text-[10px] text-cyan-500 flex items-center gap-1 mt-1", children: [
+          audioUrls[currentPart] && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "text-[10px] text-cyan-500 flex items-center justify-center gap-1 mt-2 border-t border-black/5 dark:border-white/5 pt-2", children: [
             /* @__PURE__ */ jsxRuntimeExports.jsx(WandSparkles, { size: 10 }),
             " Powered by Gemini 2.5 Flash TTS"
           ] })
@@ -32556,7 +32560,7 @@ Please change the parent <Route path="${parentPath}"> to <Route path="${parentPa
           /* @__PURE__ */ jsxRuntimeExports.jsx(Route, { path: "/speaking", element: /* @__PURE__ */ jsxRuntimeExports.jsx(LiveSpeaking, {}) }),
           /* @__PURE__ */ jsxRuntimeExports.jsx(Route, { path: "/veo", element: /* @__PURE__ */ jsxRuntimeExports.jsx(VeoVisuals, {}) })
         ] }) }),
-        /* @__PURE__ */ jsxRuntimeExports.jsxs("nav", { className: "md:hidden fixed bottom-0 left-0 right-0 bg-white/90 dark:bg-black/90 backdrop-blur-xl border-t border-slate-200 dark:border-white/10 p-2 flex justify-around z-50 shadow-2xl", children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("nav", { className: "md:hidden fixed bottom-0 left-0 right-0 bg-white/90 dark:bg-black/90 backdrop-blur-xl border-t border-slate-200 dark:border-white/10 pb-8 pt-3 px-2 flex justify-around z-50 shadow-2xl", children: [
           /* @__PURE__ */ jsxRuntimeExports.jsx(NavItem, { to: "/listening", icon: Volume2, label: "Listen" }),
           /* @__PURE__ */ jsxRuntimeExports.jsx(NavItem, { to: "/reading", icon: BookOpen, label: "Read" }),
           /* @__PURE__ */ jsxRuntimeExports.jsx(NavItem, { to: "/", icon: LayoutDashboard, label: "Hub" }),
