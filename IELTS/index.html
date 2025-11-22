@@ -147,7 +147,7 @@ import { initializeApp, getApp } from "firebase/app";
 import { getAnalytics } from "firebase/analytics";
 import { getAuth, GoogleAuthProvider, signInWithPopup, signInAnonymously, linkWithPopup, signOut, onAuthStateChanged } from "firebase/auth";
 var require_index_001 = __commonJS({
-  "index-DMvcNtRG.js"(exports) {
+  "index-CyBSOHq5.js"(exports) {
     (function polyfill() {
       const relList = document.createElement("link").relList;
       if (relList && relList.supports && relList.supports("modulepreload")) {
@@ -32545,39 +32545,97 @@ Please change the parent <Route path="${parentPath}"> to <Route path="${parentPa
         localStorage.setItem(`ielts_scores_${user.uid}`, JSON.stringify(newScores));
       };
       if (!user) {
-        return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: `min-h-screen w-full flex flex-col items-center justify-center bg-black text-white relative overflow-hidden font-sans ${isDark ? "dark" : ""}`, children: [
-          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-10" }),
-          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "absolute top-0 -left-20 w-96 h-96 bg-cyan-500/10 rounded-full blur-3xl animate-pulse" }),
-          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "absolute bottom-0 -right-20 w-96 h-96 bg-violet-500/10 rounded-full blur-3xl animate-pulse delay-700" }),
-          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "z-10 text-center space-y-8 p-8 max-w-md w-full", children: [
-            /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "w-20 h-20 mx-auto bg-gradient-to-br from-cyan-500 to-blue-600 rounded-3xl flex items-center justify-center shadow-2xl shadow-cyan-500/30", children: /* @__PURE__ */ jsxRuntimeExports.jsx(Zap, { size: 40, className: "text-white", fill: "currentColor" }) }),
-            /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "space-y-2", children: [
-              /* @__PURE__ */ jsxRuntimeExports.jsx("h1", { className: "text-5xl font-black tracking-tighter bg-clip-text text-transparent bg-gradient-to-r from-white to-slate-400", children: "IELTS ACE" }),
-              /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-cyan-400 font-mono text-sm tracking-[0.2em]", children: "NEURAL PREPARATION SYSTEM" })
+        return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "min-h-screen w-full flex items-center justify-center bg-[#050505] text-white relative overflow-hidden font-sans selection:bg-cyan-500/30", children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "absolute top-0 left-0 w-full h-full overflow-hidden z-0 pointer-events-none", children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-purple-600/20 rounded-full blur-[120px] animate-blob mix-blend-screen" }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "absolute top-[20%] right-[-10%] w-[35%] h-[35%] bg-cyan-500/20 rounded-full blur-[120px] animate-blob animation-delay-2000 mix-blend-screen" }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "absolute bottom-[-10%] left-[20%] w-[45%] h-[45%] bg-blue-600/20 rounded-full blur-[120px] animate-blob animation-delay-4000 mix-blend-screen" }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 brightness-100 contrast-150" })
+          ] }),
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "relative z-10 w-full max-w-5xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-12 p-6 items-center", children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "space-y-8 text-center lg:text-left", children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/5 border border-white/10 backdrop-blur-md text-xs font-medium text-cyan-300 tracking-wide", children: [
+                /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { className: "relative flex h-2 w-2", children: [
+                  /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75" }),
+                  /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "relative inline-flex rounded-full h-2 w-2 bg-cyan-500" })
+                ] }),
+                "AI-POWERED PREPARATION"
+              ] }),
+              /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "space-y-4", children: [
+                /* @__PURE__ */ jsxRuntimeExports.jsxs("h1", { className: "text-5xl md:text-7xl font-black tracking-tighter leading-[0.9]", children: [
+                  /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "bg-clip-text text-transparent bg-gradient-to-b from-white to-slate-400", children: "MASTER" }),
+                  /* @__PURE__ */ jsxRuntimeExports.jsx("br", {}),
+                  /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "bg-clip-text text-transparent bg-gradient-to-r from-cyan-400 via-blue-500 to-purple-600", children: "IELTS" })
+                ] }),
+                /* @__PURE__ */ jsxRuntimeExports.jsxs("p", { className: "text-lg text-slate-400 max-w-md mx-auto lg:mx-0 leading-relaxed", children: [
+                  "The world's most advanced ",
+                  /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-white font-semibold", children: "Neural Preparation System" }),
+                  ". Real-time feedback, generative grading, and adaptive learning paths."
+                ] })
+              ] }),
+              /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "hidden lg:flex gap-6 text-sm font-medium text-slate-500", children: [
+                /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-2", children: [
+                  /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "p-1.5 rounded-lg bg-white/5 text-cyan-400", children: /* @__PURE__ */ jsxRuntimeExports.jsx(Zap, { size: 16 }) }),
+                  /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: "Instant Analysis" })
+                ] }),
+                /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-2", children: [
+                  /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "p-1.5 rounded-lg bg-white/5 text-purple-400", children: /* @__PURE__ */ jsxRuntimeExports.jsx(Activity, { size: 16 }) }),
+                  /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: "Band 9.0 Logic" })
+                ] })
+              ] })
             ] }),
-            /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "space-y-4 pt-8", children: [
-              /* @__PURE__ */ jsxRuntimeExports.jsxs(
-                "button",
-                {
-                  onClick: () => window.loginWithGoogle(),
-                  className: "group relative w-full py-4 bg-white text-black rounded-xl font-bold text-lg overflow-hidden transition-all hover:scale-[1.02] hover:shadow-xl hover:shadow-white/10",
-                  children: [
-                    /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "absolute inset-0 bg-gradient-to-r from-cyan-400 via-blue-500 to-purple-600 opacity-0 group-hover:opacity-10 transition-opacity" }),
-                    /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { className: "flex items-center justify-center gap-2", children: [
-                      /* @__PURE__ */ jsxRuntimeExports.jsx(User, { size: 20 }),
-                      " Login with Google"
-                    ] })
-                  ]
-                }
-              ),
-              /* @__PURE__ */ jsxRuntimeExports.jsx(
-                "button",
-                {
-                  onClick: () => window.startAsGuest(),
-                  className: "w-full py-4 bg-white/5 border border-white/10 text-slate-300 rounded-xl font-bold text-sm hover:bg-white/10 transition-all",
-                  children: "Continue as Guest"
-                }
-              )
+            /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "relative group", children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "absolute -inset-1 bg-gradient-to-r from-cyan-500 to-purple-600 rounded-3xl blur opacity-20 group-hover:opacity-40 transition duration-1000" }),
+              /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "relative bg-black/40 backdrop-blur-xl border border-white/10 p-8 md:p-10 rounded-3xl shadow-2xl", children: [
+                /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex flex-col gap-6", children: [
+                  /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "text-center space-y-2 mb-2", children: [
+                    /* @__PURE__ */ jsxRuntimeExports.jsx("h3", { className: "text-2xl font-bold text-white", children: "Get Started" }),
+                    /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-sm text-slate-400", children: "Join the elite preparation network" })
+                  ] }),
+                  /* @__PURE__ */ jsxRuntimeExports.jsxs(
+                    "button",
+                    {
+                      onClick: () => window.loginWithGoogle(),
+                      className: "group/btn relative w-full py-4 bg-white text-black rounded-xl font-bold text-lg overflow-hidden transition-all hover:scale-[1.02] hover:shadow-xl hover:shadow-cyan-500/20",
+                      children: [
+                        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "absolute inset-0 bg-gradient-to-r from-slate-100 to-white opacity-100 group-hover/btn:opacity-90 transition-opacity" }),
+                        /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { className: "relative flex items-center justify-center gap-3", children: [
+                          /* @__PURE__ */ jsxRuntimeExports.jsxs("svg", { className: "w-5 h-5", viewBox: "0 0 24 24", children: [
+                            /* @__PURE__ */ jsxRuntimeExports.jsx("path", { d: "M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z", fill: "#4285F4" }),
+                            /* @__PURE__ */ jsxRuntimeExports.jsx("path", { d: "M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z", fill: "#34A853" }),
+                            /* @__PURE__ */ jsxRuntimeExports.jsx("path", { d: "M5.84 14.11c-.22-.66-.35-1.36-.35-2.11s.13-1.45.35-2.11V7.05H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.95l3.66-2.84z", fill: "#FBBC05" }),
+                            /* @__PURE__ */ jsxRuntimeExports.jsx("path", { d: "M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.05l3.66 2.84c.87-2.6 3.3-4.51 6.16-4.51z", fill: "#EA4335" })
+                          ] }),
+                          "Continue with Google"
+                        ] })
+                      ]
+                    }
+                  ),
+                  /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "relative flex items-center gap-4 py-2", children: [
+                    /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "h-px bg-white/10 flex-1" }),
+                    /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-xs text-slate-500 font-medium uppercase tracking-wider", children: "or" }),
+                    /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "h-px bg-white/10 flex-1" })
+                  ] }),
+                  /* @__PURE__ */ jsxRuntimeExports.jsxs(
+                    "button",
+                    {
+                      onClick: () => window.startAsGuest(),
+                      className: "w-full py-4 bg-white/5 border border-white/10 text-slate-300 rounded-xl font-bold text-sm hover:bg-white/10 hover:text-white hover:border-white/20 transition-all flex items-center justify-center gap-2 group/guest",
+                      children: [
+                        /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: "Continue as Guest" }),
+                        /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "group-hover/guest:translate-x-1 transition-transform", children: "→" })
+                      ]
+                    }
+                  )
+                ] }),
+                /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "mt-8 pt-6 border-t border-white/5 text-center", children: /* @__PURE__ */ jsxRuntimeExports.jsxs("p", { className: "text-xs text-slate-500", children: [
+                  "By continuing, you agree to our ",
+                  /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-slate-400 hover:text-white cursor-pointer transition-colors", children: "Terms" }),
+                  " and ",
+                  /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-slate-400 hover:text-white cursor-pointer transition-colors", children: "Privacy Policy" }),
+                  "."
+                ] }) })
+              ] })
             ] })
           ] })
         ] });
