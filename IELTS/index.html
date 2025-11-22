@@ -30328,78 +30328,6 @@ Please change the parent <Route path="${parentPath}"> to <Route path="${parentPa
       throw error;
     }
   });
-  const generateListeningTest = (part = 1) => __async(null, null, function* () {
-    let context = "";
-    let topic = "";
-    switch (part) {
-      case 1:
-        context = "Section 1: A conversation between two people set in an everyday social context (e.g., booking accommodation, inquiring about a gym membership).";
-        topic = "Everyday Social Conversation";
-        break;
-      case 2:
-        context = "Section 2: A monologue set in an everyday social context (e.g., a speech about local facilities, a guide giving a tour).";
-        topic = "Social Monologue";
-        break;
-      case 3:
-        context = "Section 3: A conversation between up to four people set in an educational or training context (e.g., a university tutor and a student discussing an assignment).";
-        topic = "Educational Conversation";
-        break;
-      case 4:
-        context = "Section 4: A monologue on an academic subject (e.g., a university lecture).";
-        topic = "Academic Monologue";
-        break;
-      default:
-        context = "Section 1: A conversation between two people set in an everyday social context.";
-        topic = "General Listening";
-    }
-    const seed = Math.floor(Math.random() * 1e4);
-    const prompt = `Generate an IELTS Listening Test ${context}.
-  Topic: ${topic}
-  Random Seed: ${seed}
-  
-  Requirements:
-  1. Generate exactly 10 questions.
-  2. Mix of Gap Fill (completion) and Multiple Choice.
-  3. For Gap Fill, ensure the answer is a specific word or short phrase from the script.
-  4. The script must be realistic and challenging, suitable for IELTS.
-  5. Script length: Approx 400-500 words (concise but complete).
-  6. The script should be formatted as plain text dialogue or monologue suitable for reading aloud.
-  `;
-    const schema = {
-      type: Type.OBJECT,
-      properties: {
-        topic: { type: Type.STRING },
-        script: { type: Type.STRING },
-        questions: {
-          type: Type.ARRAY,
-          items: {
-            type: Type.OBJECT,
-            properties: {
-              id: { type: Type.STRING },
-              text: { type: Type.STRING },
-              type: { type: Type.STRING, enum: ["mcq", "gap_fill"] },
-              options: { type: Type.ARRAY, items: { type: Type.STRING } },
-              correctAnswer: { type: Type.STRING },
-              explanation: { type: Type.STRING }
-            },
-            required: ["id", "text", "type", "correctAnswer", "explanation"]
-          }
-        }
-      },
-      required: ["topic", "script", "questions"]
-    };
-    try {
-      return yield generateJSON("gemini-2.0-flash", prompt, schema);
-    } catch (error) {
-      console.warn("Gemini 2.0 Flash failed, falling back to 1.5 Flash...", error);
-      try {
-        return yield generateJSON("gemini-1.5-flash", prompt, schema);
-      } catch (fallbackError) {
-        console.error("Listening Gen Fallback Error:", fallbackError);
-        return null;
-      }
-    }
-  });
   const concatenateAudioBuffers = (buffers) => {
     let totalLength = 0;
     for (const buffer of buffers) {
@@ -30465,62 +30393,6 @@ Please change the parent <Route path="${parentPath}"> to <Route path="${parentPa
       console.error("TTS Generation Error", e);
       return { audio: null, error: e.message || "Unknown TTS error" };
     }
-  });
-  const generateReadingTest = (passageNum = 1) => __async(null, null, function* () {
-    let topic = "";
-    let difficulty = "";
-    switch (passageNum) {
-      case 1:
-        topic = "Social Survival / General Interest";
-        difficulty = "Moderate";
-        break;
-      case 2:
-        topic = "Workplace / Training Context";
-        difficulty = "Hard";
-        break;
-      case 3:
-        topic = "General Academic / Complex Argument";
-        difficulty = "Very Hard";
-        break;
-      default:
-        topic = "General Interest";
-        difficulty = "Moderate";
-    }
-    const prompt = `Generate an IELTS Reading Passage (Passage ${passageNum} of 3).
-  Topic: ${topic}
-  Difficulty: ${difficulty}
-  
-  Requirements:
-  1. Passage Length: 700-900 words.
-  2. Generate exactly 15 questions.
-  3. Question Types: Mix of Multiple Choice, True/False/Not Given, and Matching Headings.
-  4. The text must be academic and challenging, suitable for IELTS.
-  5. IMPORTANT: The JSON key for the passage text must be "text", NOT "passage".
-  `;
-    const schema = {
-      type: Type.OBJECT,
-      properties: {
-        title: { type: Type.STRING },
-        text: { type: Type.STRING },
-        questions: {
-          type: Type.ARRAY,
-          items: {
-            type: Type.OBJECT,
-            properties: {
-              id: { type: Type.STRING },
-              text: { type: Type.STRING },
-              type: { type: Type.STRING, enum: ["mcq", "true_false", "matching"] },
-              options: { type: Type.ARRAY, items: { type: Type.STRING } },
-              correctAnswer: { type: Type.STRING },
-              explanation: { type: Type.STRING }
-            },
-            required: ["id", "text", "type", "correctAnswer", "explanation"]
-          }
-        }
-      },
-      required: ["title", "text", "questions"]
-    };
-    return yield generateJSON("gemini-2.0-flash", prompt, schema);
   });
   const generateWritingTask = (taskType) => __async(null, null, function* () {
     const prompt = `Generate an IELTS Writing ${taskType === "task1" ? "Task 1" : "Task 2"} prompt.
@@ -31017,6 +30889,7 @@ Please change the parent <Route path="${parentPath}"> to <Route path="${parentPa
   const WritingSection = () => {
     var _a, _b;
     const { updateScore } = useScore();
+    const { writingTest, setWritingTest } = useTest();
     const [taskType, setTaskType] = reactExports.useState("task1");
     const [taskData, setTaskData] = reactExports.useState(null);
     const [response, setResponse] = reactExports.useState("");
@@ -31025,14 +30898,40 @@ Please change the parent <Route path="${parentPath}"> to <Route path="${parentPa
     const [feedback, setFeedback] = reactExports.useState(null);
     const [timeLeft, setTimeLeft] = reactExports.useState(0);
     const [timerActive, setTimerActive] = reactExports.useState(false);
-    const generatePrompt = () => __async(null, null, function* () {
+    const stateRef = React.useRef({
+      taskType,
+      taskData,
+      response,
+      feedback,
+      timeLeft,
+      timerActive
+    });
+    reactExports.useEffect(() => {
+      stateRef.current = { taskType, taskData, response, feedback, timeLeft, timerActive };
+    }, [taskType, taskData, response, feedback, timeLeft, timerActive]);
+    reactExports.useEffect(() => {
+      if (writingTest) {
+        setTaskType(writingTest.taskType);
+        setTaskData(writingTest.taskData);
+        setResponse(writingTest.response);
+        setFeedback(writingTest.feedback);
+        setTimeLeft(writingTest.timeLeft);
+        setTimerActive(false);
+      } else {
+        generatePrompt(taskType);
+      }
+      return () => {
+        setWritingTest(stateRef.current);
+      };
+    }, []);
+    const generatePrompt = (..._0) => __async(null, [..._0], function* (type = taskType) {
       setLoading(true);
       setFeedback(null);
       setResponse("");
       setTimerActive(false);
-      setTimeLeft(taskType === "task1" ? 20 * 60 : 40 * 60);
+      setTimeLeft(type === "task1" ? 20 * 60 : 40 * 60);
       try {
-        const data = yield generateWritingTask(taskType);
+        const data = yield generateWritingTask(type);
         setTaskData(data);
       } catch (error) {
         console.error("Failed to generate prompt", error);
@@ -31040,9 +30939,12 @@ Please change the parent <Route path="${parentPath}"> to <Route path="${parentPa
         setLoading(false);
       }
     });
-    reactExports.useEffect(() => {
-      generatePrompt();
-    }, [taskType]);
+    const handleTaskTypeChange = (type) => {
+      if (type !== taskType) {
+        setTaskType(type);
+        generatePrompt(type);
+      }
+    };
     reactExports.useEffect(() => {
       let interval;
       if (timerActive && timeLeft > 0) {
@@ -31052,7 +30954,7 @@ Please change the parent <Route path="${parentPath}"> to <Route path="${parentPa
       }
       return () => clearInterval(interval);
     }, [timerActive, timeLeft]);
-    const formatTime = (seconds) => {
+    const formatTime2 = (seconds) => {
       const m = Math.floor(seconds / 60);
       const s = seconds % 60;
       return `${m}:${s < 10 ? "0" : ""}${s}`;
@@ -31098,7 +31000,7 @@ Please change the parent <Route path="${parentPath}"> to <Route path="${parentPa
           /* @__PURE__ */ jsxRuntimeExports.jsx(
             "button",
             {
-              onClick: () => setTaskType("task1"),
+              onClick: () => handleTaskTypeChange("task1"),
               className: `px-6 py-2 rounded-lg text-sm font-bold transition-all ${taskType === "task1" ? "bg-white dark:bg-black text-violet-600 shadow-sm" : "text-slate-500 hover:text-slate-800 dark:hover:text-white"}`,
               children: "Task 1"
             }
@@ -31106,7 +31008,7 @@ Please change the parent <Route path="${parentPath}"> to <Route path="${parentPa
           /* @__PURE__ */ jsxRuntimeExports.jsx(
             "button",
             {
-              onClick: () => setTaskType("task2"),
+              onClick: () => handleTaskTypeChange("task2"),
               className: `px-6 py-2 rounded-lg text-sm font-bold transition-all ${taskType === "task2" ? "bg-white dark:bg-black text-violet-600 shadow-sm" : "text-slate-500 hover:text-slate-800 dark:hover:text-white"}`,
               children: "Task 2"
             }
@@ -31121,7 +31023,7 @@ Please change the parent <Route path="${parentPath}"> to <Route path="${parentPa
                 /* @__PURE__ */ jsxRuntimeExports.jsx(PenTool, { size: 18, className: "text-violet-500" }),
                 "Current Task"
               ] }),
-              /* @__PURE__ */ jsxRuntimeExports.jsx("button", { onClick: generatePrompt, disabled: loading, className: "text-slate-400 hover:text-violet-500 transition-colors", children: /* @__PURE__ */ jsxRuntimeExports.jsx(RefreshCw, { size: 16, className: loading ? "animate-spin" : "" }) })
+              /* @__PURE__ */ jsxRuntimeExports.jsx("button", { onClick: () => generatePrompt(taskType), disabled: loading, className: "text-slate-400 hover:text-violet-500 transition-colors", children: /* @__PURE__ */ jsxRuntimeExports.jsx(RefreshCw, { size: 16, className: loading ? "animate-spin" : "" }) })
             ] }),
             loading ? /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "py-8 text-center", children: [
               /* @__PURE__ */ jsxRuntimeExports.jsx(LoaderCircle, { className: "animate-spin mx-auto text-violet-500 mb-2" }),
@@ -31171,7 +31073,7 @@ Please change the parent <Route path="${parentPath}"> to <Route path="${parentPa
                 /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: `flex items-center gap-2 font-mono font-bold ${timeLeft < 300 && timerActive ? "text-red-500 animate-pulse" : "text-slate-500"}`, children: [
                   /* @__PURE__ */ jsxRuntimeExports.jsx(Timer, { size: 16 }),
                   " ",
-                  formatTime(timeLeft)
+                  formatTime2(timeLeft)
                 ] }),
                 !timerActive && timeLeft > 0 && /* @__PURE__ */ jsxRuntimeExports.jsx("button", { onClick: () => setTimerActive(true), className: "text-xs bg-violet-100 dark:bg-violet-900/30 text-violet-600 dark:text-violet-300 px-3 py-1 rounded-full font-bold hover:bg-violet-200 transition-colors", children: "Start Timer" })
               ] })
@@ -31233,6 +31135,7 @@ Please change the parent <Route path="${parentPath}"> to <Route path="${parentPa
   };
   const Listening = () => {
     const { updateScore } = useScore();
+    const { listeningTest, setListeningTest } = useTest();
     const [currentPart, setCurrentPart] = reactExports.useState(1);
     const [testData, setTestData] = reactExports.useState({});
     const [audioUrls, setAudioUrls] = reactExports.useState({});
@@ -31244,6 +31147,17 @@ Please change the parent <Route path="${parentPath}"> to <Route path="${parentPa
     const [finalScore, setFinalScore] = reactExports.useState(0);
     const [showHistory, setShowHistory] = reactExports.useState(false);
     const [history, setHistory] = reactExports.useState([]);
+    const stateRef = React.useRef({
+      currentPart,
+      testData,
+      audioUrls,
+      answers,
+      submitted,
+      finalScore
+    });
+    reactExports.useEffect(() => {
+      stateRef.current = { currentPart, testData, audioUrls, answers, submitted, finalScore };
+    }, [currentPart, testData, audioUrls, answers, submitted, finalScore]);
     reactExports.useEffect(() => {
       const saved = localStorage.getItem("ielts_listening_history");
       if (saved) {
@@ -31254,76 +31168,19 @@ Please change the parent <Route path="${parentPath}"> to <Route path="${parentPa
         }
       }
     }, []);
-    const saveToHistory = (score, band) => {
-      const newResult = {
-        id: Date.now().toString(),
-        date: (/* @__PURE__ */ new Date()).toLocaleDateString(),
-        score,
-        band,
-        answers,
-        testData
-      };
-      const updated = [newResult, ...history].slice(0, 10);
-      setHistory(updated);
-      localStorage.setItem("ielts_listening_history", JSON.stringify(updated));
-    };
-    const clearHistory = () => {
-      if (confirm("Are you sure you want to clear your test history?")) {
-        setHistory([]);
-        localStorage.removeItem("ielts_listening_history");
-      }
-    };
-    const loadPart = (part) => __async(null, null, function* () {
-      setLoading(true);
-      setAudioLoading(false);
-      setError(null);
-      try {
-        const result = yield generateListeningTest(part);
-        const data = result;
-        if (!data || !data.questions || !data.script) {
-          throw new Error("Invalid test data received from AI. Please try again.");
-        }
-        const fixedQuestions = data.questions.map((q) => __spreadProps(__spreadValues({}, q), {
-          id: `p${part}_${q.id}`
-        }));
-        const fixedData = __spreadProps(__spreadValues({}, data), { questions: fixedQuestions });
-        setTestData((prev) => __spreadProps(__spreadValues({}, prev), { [part]: fixedData }));
-        setLoading(false);
-        setAudioLoading(true);
-        try {
-          const ttsResult = yield generateTTS(data.script);
-          if (ttsResult && ttsResult.audio) {
-            const byteCharacters = atob(ttsResult.audio);
-            const byteNumbers = new Array(byteCharacters.length);
-            for (let i = 0; i < byteCharacters.length; i++) {
-              byteNumbers[i] = byteCharacters.charCodeAt(i);
-            }
-            const byteArray = new Uint8Array(byteNumbers);
-            const audioBlob = new Blob([byteArray], { type: "audio/mp3" });
-            const url = URL.createObjectURL(audioBlob);
-            setAudioUrls((prev) => __spreadProps(__spreadValues({}, prev), { [part]: url }));
-          } else {
-            console.warn("TTS returned no audio:", ttsResult == null ? void 0 : ttsResult.error);
-            if (ttsResult == null ? void 0 : ttsResult.error) {
-              console.error("Audio Generation Error:", ttsResult.error);
-            }
-          }
-        } catch (audioErr) {
-          console.error("Audio generation failed:", audioErr);
-        } finally {
-          setAudioLoading(false);
-        }
-      } catch (err) {
-        console.error("Error loading part:", err);
-        setError(err.message || "Failed to load listening test part.");
-        setLoading(false);
-        setAudioLoading(false);
-      }
-    });
     reactExports.useEffect(() => {
-      loadPart(1);
+      if (listeningTest) {
+        setCurrentPart(listeningTest.currentPart);
+        setTestData(listeningTest.testData);
+        setAudioUrls(listeningTest.audioUrls);
+        setAnswers(listeningTest.answers);
+        setSubmitted(listeningTest.submitted);
+        setFinalScore(listeningTest.finalScore);
+      } else {
+        loadPart(1);
+      }
       return () => {
-        Object.values(audioUrls).forEach((url) => URL.revokeObjectURL(url));
+        setListeningTest(stateRef.current);
       };
     }, []);
     const handleNextPart = () => {
@@ -31380,9 +31237,11 @@ Please change the parent <Route path="${parentPath}"> to <Route path="${parentPa
       setSubmitted(false);
       setAnswers({});
       setTestData({});
+      Object.values(audioUrls).forEach((url) => URL.revokeObjectURL(url));
       setAudioUrls({});
       setCurrentPart(1);
       setFinalScore(0);
+      setListeningTest(null);
       loadPart(1);
     };
     const loadHistoricalTest = (result) => {
@@ -31623,6 +31482,7 @@ Please change the parent <Route path="${parentPath}"> to <Route path="${parentPa
     ] });
   };
   const IELTSReading = () => {
+    const { readingTest, setReadingTest } = useTest();
     const [currentPassage, setCurrentPassage] = reactExports.useState(1);
     const [testData, setTestData] = reactExports.useState({});
     const [loading, setLoading] = reactExports.useState(false);
@@ -31634,6 +31494,18 @@ Please change the parent <Route path="${parentPath}"> to <Route path="${parentPa
     const [timerActive, setTimerActive] = reactExports.useState(false);
     const [showHistory, setShowHistory] = reactExports.useState(false);
     const [history, setHistory] = reactExports.useState([]);
+    const stateRef = React.useRef({
+      currentPassage,
+      testData,
+      answers,
+      submitted,
+      finalScore,
+      timeLeft,
+      timerActive
+    });
+    reactExports.useEffect(() => {
+      stateRef.current = { currentPassage, testData, answers, submitted, finalScore, timeLeft, timerActive };
+    }, [currentPassage, testData, answers, submitted, finalScore, timeLeft, timerActive]);
     reactExports.useEffect(() => {
       const saved = localStorage.getItem("ielts_reading_history");
       if (saved) {
@@ -31644,65 +31516,21 @@ Please change the parent <Route path="${parentPath}"> to <Route path="${parentPa
         }
       }
     }, []);
-    const saveToHistory = (score, band) => {
-      const newResult = {
-        id: Date.now().toString(),
-        date: (/* @__PURE__ */ new Date()).toLocaleDateString(),
-        score,
-        band,
-        answers,
-        testData
+    reactExports.useEffect(() => {
+      if (readingTest) {
+        setCurrentPassage(readingTest.currentPassage);
+        setTestData(readingTest.testData);
+        setAnswers(readingTest.answers);
+        setSubmitted(readingTest.submitted);
+        setFinalScore(readingTest.finalScore);
+        setTimeLeft(readingTest.timeLeft);
+        setTimerActive(false);
+      } else {
+        loadPassage(1);
+      }
+      return () => {
+        setReadingTest(stateRef.current);
       };
-      const updated = [newResult, ...history].slice(0, 10);
-      setHistory(updated);
-      localStorage.setItem("ielts_reading_history", JSON.stringify(updated));
-    };
-    const clearHistory = () => {
-      if (confirm("Are you sure you want to clear your test history?")) {
-        setHistory([]);
-        localStorage.removeItem("ielts_reading_history");
-      }
-    };
-    reactExports.useEffect(() => {
-      let interval;
-      if (timerActive && timeLeft > 0 && !submitted) {
-        interval = setInterval(() => {
-          setTimeLeft((prev) => prev - 1);
-        }, 1e3);
-      } else if (timeLeft === 0 && !submitted) {
-        calculateScore();
-      }
-      return () => clearInterval(interval);
-    }, [timerActive, timeLeft, submitted]);
-    const formatTime = (seconds) => {
-      const m = Math.floor(seconds / 60);
-      const s = seconds % 60;
-      return `${m}:${s < 10 ? "0" : ""}${s}`;
-    };
-    const loadPassage = (passageNum) => __async(null, null, function* () {
-      setLoading(true);
-      setError(null);
-      try {
-        const result = yield generateReadingTest(passageNum);
-        const data = result;
-        if (!data || !data.questions || !data.text) {
-          throw new Error("Invalid reading data received. Please try again.");
-        }
-        const fixedQuestions = data.questions.map((q) => __spreadProps(__spreadValues({}, q), {
-          id: `p${passageNum}_${q.id}`
-        }));
-        const fixedData = __spreadProps(__spreadValues({}, data), { questions: fixedQuestions });
-        setTestData((prev) => __spreadProps(__spreadValues({}, prev), { [passageNum]: fixedData }));
-        setTimerActive(true);
-      } catch (err) {
-        console.error("Error loading passage:", err);
-        setError(err.message || "Failed to load reading passage.");
-      } finally {
-        setLoading(false);
-      }
-    });
-    reactExports.useEffect(() => {
-      loadPassage(1);
     }, []);
     const handleNextPassage = () => {
       if (currentPassage < 3) {
@@ -31953,7 +31781,16 @@ Please change the parent <Route path="${parentPath}"> to <Route path="${parentPa
                 }) })
               ] }, part);
             }) }),
-            /* @__PURE__ */ jsxRuntimeExports.jsx("button", { onClick: () => window.location.reload(), className: "w-full py-4 text-emerald-500 font-bold hover:bg-emerald-500/10 rounded-xl transition-colors border border-transparent hover:border-emerald-500/30", children: "Start New Reading Test" })
+            /* @__PURE__ */ jsxRuntimeExports.jsx("button", { onClick: () => {
+              setSubmitted(false);
+              setAnswers({});
+              setTestData({});
+              setCurrentPassage(1);
+              setFinalScore(0);
+              setTimeLeft(60 * 60);
+              setReadingTest(null);
+              loadPassage(1);
+            }, className: "w-full py-4 text-emerald-500 font-bold hover:bg-emerald-500/10 rounded-xl transition-colors border border-transparent hover:border-emerald-500/30", children: "Start New Reading Test" })
           ] })
         ) }) : null
       ] })
@@ -32294,6 +32131,18 @@ Please change the parent <Route path="${parentPath}"> to <Route path="${parentPa
       /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "absolute bottom-0 right-0 p-2 opacity-0 group-hover:opacity-100 transition-opacity", children: /* @__PURE__ */ jsxRuntimeExports.jsx(Icon2, { className: `w-24 h-24 text-${color}-500/5 -rotate-12` }) })
     ] });
   };
+  const TestContext = reactExports.createContext({
+    listeningTest: null,
+    setListeningTest: () => {
+    },
+    readingTest: null,
+    setReadingTest: () => {
+    },
+    writingTest: null,
+    setWritingTest: () => {
+    }
+  });
+  const useTest = () => reactExports.useContext(TestContext);
   const App = () => {
     const [isDark, setIsDark] = reactExports.useState(true);
     const [onboarded, setOnboarded] = reactExports.useState(() => {
@@ -32306,6 +32155,9 @@ Please change the parent <Route path="${parentPath}"> to <Route path="${parentPa
     const [hasKey, setHasKey] = reactExports.useState(false);
     const [xp, setXp] = reactExports.useState(0);
     const [level, setLevel] = reactExports.useState(1);
+    const [listeningTest, setListeningTest] = reactExports.useState(null);
+    const [readingTest, setReadingTest] = reactExports.useState(null);
+    const [writingTest, setWritingTest] = reactExports.useState(null);
     const addXP = (amount) => {
       const newXp = xp + amount;
       setXp(newXp);
@@ -32418,9 +32270,9 @@ Please change the parent <Route path="${parentPath}"> to <Route path="${parentPa
       setScores(newScores);
       localStorage.setItem("ielts_scores", JSON.stringify(newScores));
     };
-    return /* @__PURE__ */ jsxRuntimeExports.jsx(ThemeContext.Provider, { value: { isDark, toggleTheme }, children: /* @__PURE__ */ jsxRuntimeExports.jsx(XPContext.Provider, { value: { xp, addXP, level }, children: /* @__PURE__ */ jsxRuntimeExports.jsx(ScoreContext.Provider, { value: { scores, updateScore }, children: /* @__PURE__ */ jsxRuntimeExports.jsxs(HashRouter, { children: [
+    return /* @__PURE__ */ jsxRuntimeExports.jsx(ThemeContext.Provider, { value: { isDark, toggleTheme }, children: /* @__PURE__ */ jsxRuntimeExports.jsx(XPContext.Provider, { value: { xp, addXP, level }, children: /* @__PURE__ */ jsxRuntimeExports.jsx(ScoreContext.Provider, { value: { scores, updateScore }, children: /* @__PURE__ */ jsxRuntimeExports.jsx(TestContext.Provider, { value: { listeningTest, setListeningTest, readingTest, setReadingTest, writingTest, setWritingTest }, children: /* @__PURE__ */ jsxRuntimeExports.jsxs(HashRouter, { children: [
       /* @__PURE__ */ jsxRuntimeExports.jsx(ScrollToTop, {}),
-      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "min-h-screen bg-slate-50 dark:bg-black text-slate-900 dark:text-slate-100 transition-colors duration-300 pb-24 md:pb-0 font-sans selection:bg-cyan-500/30", children: !onboarded ? /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "p-4 max-w-4xl mx-auto min-h-screen flex flex-col justify-start pt-20", children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "min-h-screen bg-slate-50 dark:bg-black text-slate-900 dark:text-slate-100 transition-colors duration-300 pb-20 md:pb-0 font-sans selection:bg-cyan-500/30 overflow-x-hidden", children: !onboarded ? /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "p-4 max-w-4xl mx-auto min-h-screen flex flex-col justify-start pt-20", children: [
         /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "flex justify-end mb-4", children: /* @__PURE__ */ jsxRuntimeExports.jsx("button", { onClick: toggleTheme, className: "p-2 rounded-full bg-slate-200 dark:bg-white/10 hover:bg-slate-300 dark:hover:bg-white/20 transition-colors", children: isDark ? /* @__PURE__ */ jsxRuntimeExports.jsx(Sun, { size: 20 }) : /* @__PURE__ */ jsxRuntimeExports.jsx(Moon, { size: 20 }) }) }),
         /* @__PURE__ */ jsxRuntimeExports.jsx(DiagnosticTest, { onComplete: handleDiagnosticComplete })
       ] }) : /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
@@ -32464,15 +32316,15 @@ Please change the parent <Route path="${parentPath}"> to <Route path="${parentPa
           /* @__PURE__ */ jsxRuntimeExports.jsx(Route, { path: "/speaking", element: /* @__PURE__ */ jsxRuntimeExports.jsx(LiveSpeaking, {}) }),
           /* @__PURE__ */ jsxRuntimeExports.jsx(Route, { path: "/veo", element: /* @__PURE__ */ jsxRuntimeExports.jsx(VeoVisuals, {}) })
         ] }) }),
-        /* @__PURE__ */ jsxRuntimeExports.jsxs("nav", { className: "md:hidden fixed bottom-0 left-0 right-0 bg-white/90 dark:bg-black/90 backdrop-blur-xl border-t border-slate-200 dark:border-white/10 p-2 flex justify-around z-50 pb-safe shadow-2xl", children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("nav", { className: "md:hidden fixed bottom-0 left-0 right-0 bg-white/90 dark:bg-black/90 backdrop-blur-xl border-t border-slate-200 dark:border-white/10 p-2 flex justify-around z-50 shadow-2xl", children: [
           /* @__PURE__ */ jsxRuntimeExports.jsx(NavItem, { to: "/listening", icon: Volume2, label: "Listen" }),
           /* @__PURE__ */ jsxRuntimeExports.jsx(NavItem, { to: "/reading", icon: BookOpen, label: "Read" }),
           /* @__PURE__ */ jsxRuntimeExports.jsx(NavItem, { to: "/", icon: LayoutDashboard, label: "Hub" }),
           /* @__PURE__ */ jsxRuntimeExports.jsx(NavItem, { to: "/writing", icon: PenTool, label: "Write" }),
-          /* @__PURE__ */ jsxRuntimeExports.jsx(NavItem, { to: "/speaking", icon: Mic, label: "Speak" })
+          /* @__PURE__ */ jsxRuntimeExports.jsx(NavItem, { to: "/speaking", icon: Mic, label: "Speaking" })
         ] })
       ] }) })
-    ] }) }) }) });
+    ] }) }) }) }) });
   };
   const mount = () => {
     const rootElement = document.getElementById("root");
@@ -32492,7 +32344,8 @@ Please change the parent <Route path="${parentPath}"> to <Route path="${parentPa
 })();</script>
 </head>
 
-<body class="bg-slate-50 text-slate-900 dark:bg-black dark:text-slate-100 transition-colors duration-300">
+<body
+  class="bg-slate-50 text-slate-900 dark:bg-black dark:text-slate-100 transition-colors duration-300 overflow-x-hidden">
   <div id="root">
     <div
       style="display: flex; justify-content: center; align-items: center; height: 100vh; color: #888; font-family: sans-serif;">
