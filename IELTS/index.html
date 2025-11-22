@@ -30328,6 +30328,78 @@ Please change the parent <Route path="${parentPath}"> to <Route path="${parentPa
       throw error;
     }
   });
+  const generateListeningTest = (part = 1) => __async(null, null, function* () {
+    let context = "";
+    let topic = "";
+    switch (part) {
+      case 1:
+        context = "Section 1: A conversation between two people set in an everyday social context (e.g., booking accommodation, inquiring about a gym membership).";
+        topic = "Everyday Social Conversation";
+        break;
+      case 2:
+        context = "Section 2: A monologue set in an everyday social context (e.g., a speech about local facilities, a guide giving a tour).";
+        topic = "Social Monologue";
+        break;
+      case 3:
+        context = "Section 3: A conversation between up to four people set in an educational or training context (e.g., a university tutor and a student discussing an assignment).";
+        topic = "Educational Conversation";
+        break;
+      case 4:
+        context = "Section 4: A monologue on an academic subject (e.g., a university lecture).";
+        topic = "Academic Monologue";
+        break;
+      default:
+        context = "Section 1: A conversation between two people set in an everyday social context.";
+        topic = "General Listening";
+    }
+    const seed = Math.floor(Math.random() * 1e4);
+    const prompt = `Generate an IELTS Listening Test ${context}.
+  Topic: ${topic}
+  Random Seed: ${seed}
+  
+  Requirements:
+  1. Generate exactly 10 questions.
+  2. Mix of Gap Fill (completion) and Multiple Choice.
+  3. For Gap Fill, ensure the answer is a specific word or short phrase from the script.
+  4. The script must be realistic and challenging, suitable for IELTS.
+  5. Script length: Approx 400-500 words (concise but complete).
+  6. The script should be formatted as plain text dialogue or monologue suitable for reading aloud.
+  `;
+    const schema = {
+      type: Type.OBJECT,
+      properties: {
+        topic: { type: Type.STRING },
+        script: { type: Type.STRING },
+        questions: {
+          type: Type.ARRAY,
+          items: {
+            type: Type.OBJECT,
+            properties: {
+              id: { type: Type.STRING },
+              text: { type: Type.STRING },
+              type: { type: Type.STRING, enum: ["mcq", "gap_fill"] },
+              options: { type: Type.ARRAY, items: { type: Type.STRING } },
+              correctAnswer: { type: Type.STRING },
+              explanation: { type: Type.STRING }
+            },
+            required: ["id", "text", "type", "correctAnswer", "explanation"]
+          }
+        }
+      },
+      required: ["topic", "script", "questions"]
+    };
+    try {
+      return yield generateJSON("gemini-2.0-flash", prompt, schema);
+    } catch (error) {
+      console.warn("Gemini 2.0 Flash failed, falling back to 1.5 Flash...", error);
+      try {
+        return yield generateJSON("gemini-1.5-flash", prompt, schema);
+      } catch (fallbackError) {
+        console.error("Listening Gen Fallback Error:", fallbackError);
+        return null;
+      }
+    }
+  });
   const concatenateAudioBuffers = (buffers) => {
     let totalLength = 0;
     for (const buffer of buffers) {
@@ -30393,6 +30465,62 @@ Please change the parent <Route path="${parentPath}"> to <Route path="${parentPa
       console.error("TTS Generation Error", e);
       return { audio: null, error: e.message || "Unknown TTS error" };
     }
+  });
+  const generateReadingTest = (passageNum = 1) => __async(null, null, function* () {
+    let topic = "";
+    let difficulty = "";
+    switch (passageNum) {
+      case 1:
+        topic = "Social Survival / General Interest";
+        difficulty = "Moderate";
+        break;
+      case 2:
+        topic = "Workplace / Training Context";
+        difficulty = "Hard";
+        break;
+      case 3:
+        topic = "General Academic / Complex Argument";
+        difficulty = "Very Hard";
+        break;
+      default:
+        topic = "General Interest";
+        difficulty = "Moderate";
+    }
+    const prompt = `Generate an IELTS Reading Passage (Passage ${passageNum} of 3).
+  Topic: ${topic}
+  Difficulty: ${difficulty}
+  
+  Requirements:
+  1. Passage Length: 700-900 words.
+  2. Generate exactly 15 questions.
+  3. Question Types: Mix of Multiple Choice, True/False/Not Given, and Matching Headings.
+  4. The text must be academic and challenging, suitable for IELTS.
+  5. IMPORTANT: The JSON key for the passage text must be "text", NOT "passage".
+  `;
+    const schema = {
+      type: Type.OBJECT,
+      properties: {
+        title: { type: Type.STRING },
+        text: { type: Type.STRING },
+        questions: {
+          type: Type.ARRAY,
+          items: {
+            type: Type.OBJECT,
+            properties: {
+              id: { type: Type.STRING },
+              text: { type: Type.STRING },
+              type: { type: Type.STRING, enum: ["mcq", "true_false", "matching"] },
+              options: { type: Type.ARRAY, items: { type: Type.STRING } },
+              correctAnswer: { type: Type.STRING },
+              explanation: { type: Type.STRING }
+            },
+            required: ["id", "text", "type", "correctAnswer", "explanation"]
+          }
+        }
+      },
+      required: ["title", "text", "questions"]
+    };
+    return yield generateJSON("gemini-2.0-flash", prompt, schema);
   });
   const generateWritingTask = (taskType) => __async(null, null, function* () {
     const prompt = `Generate an IELTS Writing ${taskType === "task1" ? "Task 1" : "Task 2"} prompt.
@@ -30763,7 +30891,7 @@ Please change the parent <Route path="${parentPath}"> to <Route path="${parentPa
         ] }),
         /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "min-h-[300px] flex flex-col items-center justify-center text-center space-y-8", children: [
           status === "idle" && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "text-center", children: [
-            /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "w-24 h-24 bg-gradient-to-tr from-rose-500 to-orange-400 rounded-full mx-auto mb-6 flex items-center justify-center shadow-xl shadow-rose-500/20 animate-blob", children: /* @__PURE__ */ jsxRuntimeExports.jsx(User, { size: 40, className: "text-white" }) }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "w-24 h-24 bg-gradient-to-tr from-rose-500 to-orange-400 rounded-full mx-auto mb-6 flex items-center justify-center shadow-xl shadow-rose-500/20", children: /* @__PURE__ */ jsxRuntimeExports.jsx(User, { size: 40, className: "text-white" }) }),
             /* @__PURE__ */ jsxRuntimeExports.jsxs("p", { className: "text-slate-500 dark:text-slate-400 mb-6 max-w-md mx-auto", children: [
               "Practice with our ",
               /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "font-bold text-slate-700 dark:text-slate-200 capitalize", children: persona }),
@@ -31168,6 +31296,72 @@ Please change the parent <Route path="${parentPath}"> to <Route path="${parentPa
         }
       }
     }, []);
+    const saveToHistory = (score, band) => {
+      const newResult = {
+        id: Date.now().toString(),
+        date: (/* @__PURE__ */ new Date()).toLocaleDateString(),
+        score,
+        band,
+        answers,
+        testData
+      };
+      const updated = [newResult, ...history].slice(0, 10);
+      setHistory(updated);
+      localStorage.setItem("ielts_listening_history", JSON.stringify(updated));
+    };
+    const clearHistory = () => {
+      if (confirm("Are you sure you want to clear your test history?")) {
+        setHistory([]);
+        localStorage.removeItem("ielts_listening_history");
+      }
+    };
+    const loadPart = (part) => __async(null, null, function* () {
+      setLoading(true);
+      setAudioLoading(false);
+      setError(null);
+      try {
+        const result = yield generateListeningTest(part);
+        const data = result;
+        if (!data || !data.questions || !data.script) {
+          throw new Error("Invalid test data received from AI. Please try again.");
+        }
+        const fixedQuestions = data.questions.map((q) => __spreadProps(__spreadValues({}, q), {
+          id: `p${part}_${q.id}`
+        }));
+        const fixedData = __spreadProps(__spreadValues({}, data), { questions: fixedQuestions });
+        setTestData((prev) => __spreadProps(__spreadValues({}, prev), { [part]: fixedData }));
+        setLoading(false);
+        setAudioLoading(true);
+        try {
+          const ttsResult = yield generateTTS(data.script);
+          if (ttsResult && ttsResult.audio) {
+            const byteCharacters = atob(ttsResult.audio);
+            const byteNumbers = new Array(byteCharacters.length);
+            for (let i = 0; i < byteCharacters.length; i++) {
+              byteNumbers[i] = byteCharacters.charCodeAt(i);
+            }
+            const byteArray = new Uint8Array(byteNumbers);
+            const audioBlob = new Blob([byteArray], { type: "audio/mp3" });
+            const url = URL.createObjectURL(audioBlob);
+            setAudioUrls((prev) => __spreadProps(__spreadValues({}, prev), { [part]: url }));
+          } else {
+            console.warn("TTS returned no audio:", ttsResult == null ? void 0 : ttsResult.error);
+            if (ttsResult == null ? void 0 : ttsResult.error) {
+              console.error("Audio Generation Error:", ttsResult.error);
+            }
+          }
+        } catch (audioErr) {
+          console.error("Audio generation failed:", audioErr);
+        } finally {
+          setAudioLoading(false);
+        }
+      } catch (err) {
+        console.error("Error loading part:", err);
+        setError(err.message || "Failed to load listening test part.");
+        setLoading(false);
+        setAudioLoading(false);
+      }
+    });
     reactExports.useEffect(() => {
       if (listeningTest) {
         setCurrentPart(listeningTest.currentPart);
@@ -31516,6 +31710,47 @@ Please change the parent <Route path="${parentPath}"> to <Route path="${parentPa
         }
       }
     }, []);
+    const saveToHistory = (score, band) => {
+      const newResult = {
+        id: Date.now().toString(),
+        date: (/* @__PURE__ */ new Date()).toLocaleDateString(),
+        score,
+        band,
+        answers,
+        testData
+      };
+      const updated = [newResult, ...history].slice(0, 10);
+      setHistory(updated);
+      localStorage.setItem("ielts_reading_history", JSON.stringify(updated));
+    };
+    const clearHistory = () => {
+      if (confirm("Are you sure you want to clear your test history?")) {
+        setHistory([]);
+        localStorage.removeItem("ielts_reading_history");
+      }
+    };
+    const loadPassage = (passageNum) => __async(null, null, function* () {
+      setLoading(true);
+      setError(null);
+      try {
+        const result = yield generateReadingTest(passageNum);
+        const data = result;
+        if (!data || !data.questions || !data.text) {
+          throw new Error("Invalid reading data received. Please try again.");
+        }
+        const fixedQuestions = data.questions.map((q) => __spreadProps(__spreadValues({}, q), {
+          id: `p${passageNum}_${q.id}`
+        }));
+        const fixedData = __spreadProps(__spreadValues({}, data), { questions: fixedQuestions });
+        setTestData((prev) => __spreadProps(__spreadValues({}, prev), { [passageNum]: fixedData }));
+        setTimerActive(true);
+      } catch (err) {
+        console.error("Error loading passage:", err);
+        setError(err.message || "Failed to load reading passage.");
+      } finally {
+        setLoading(false);
+      }
+    });
     reactExports.useEffect(() => {
       if (readingTest) {
         setCurrentPassage(readingTest.currentPassage);
@@ -32272,7 +32507,7 @@ Please change the parent <Route path="${parentPath}"> to <Route path="${parentPa
     };
     return /* @__PURE__ */ jsxRuntimeExports.jsx(ThemeContext.Provider, { value: { isDark, toggleTheme }, children: /* @__PURE__ */ jsxRuntimeExports.jsx(XPContext.Provider, { value: { xp, addXP, level }, children: /* @__PURE__ */ jsxRuntimeExports.jsx(ScoreContext.Provider, { value: { scores, updateScore }, children: /* @__PURE__ */ jsxRuntimeExports.jsx(TestContext.Provider, { value: { listeningTest, setListeningTest, readingTest, setReadingTest, writingTest, setWritingTest }, children: /* @__PURE__ */ jsxRuntimeExports.jsxs(HashRouter, { children: [
       /* @__PURE__ */ jsxRuntimeExports.jsx(ScrollToTop, {}),
-      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "min-h-screen bg-slate-50 dark:bg-black text-slate-900 dark:text-slate-100 transition-colors duration-300 pb-20 md:pb-0 font-sans selection:bg-cyan-500/30 overflow-x-hidden", children: !onboarded ? /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "p-4 max-w-4xl mx-auto min-h-screen flex flex-col justify-start pt-20", children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "min-h-screen bg-slate-50 dark:bg-black text-slate-900 dark:text-slate-100 transition-colors duration-300 pb-24 md:pb-0 font-sans selection:bg-cyan-500/30 overflow-x-hidden", children: !onboarded ? /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "p-4 max-w-4xl mx-auto min-h-screen flex flex-col justify-start pt-20", children: [
         /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "flex justify-end mb-4", children: /* @__PURE__ */ jsxRuntimeExports.jsx("button", { onClick: toggleTheme, className: "p-2 rounded-full bg-slate-200 dark:bg-white/10 hover:bg-slate-300 dark:hover:bg-white/20 transition-colors", children: isDark ? /* @__PURE__ */ jsxRuntimeExports.jsx(Sun, { size: 20 }) : /* @__PURE__ */ jsxRuntimeExports.jsx(Moon, { size: 20 }) }) }),
         /* @__PURE__ */ jsxRuntimeExports.jsx(DiagnosticTest, { onComplete: handleDiagnosticComplete })
       ] }) : /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
