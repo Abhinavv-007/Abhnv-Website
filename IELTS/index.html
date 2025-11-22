@@ -136,7 +136,7 @@ var __async = (__this, __arguments, generator) => {
     step((generator = generator.apply(__this, __arguments)).next());
   });
 };
-(function() {
+(function(firebaseApp_js2, firebaseAnalytics_js2, firebaseAuth_js2) {
   "use strict";
   function getDefaultExportFromCjs(x) {
     return x && x.__esModule && Object.prototype.hasOwnProperty.call(x, "default") ? x["default"] : x;
@@ -14930,7 +14930,7 @@ Please change the parent <Route path="${parentPath}"> to <Route path="${parentPa
    * This source code is licensed under the ISC license.
    * See the LICENSE file in the root directory of this source tree.
    */
-  const __iconNode$u = [
+  const __iconNode$w = [
     [
       "path",
       {
@@ -14939,25 +14939,25 @@ Please change the parent <Route path="${parentPath}"> to <Route path="${parentPa
       }
     ]
   ];
-  const Activity = createLucideIcon("activity", __iconNode$u);
+  const Activity = createLucideIcon("activity", __iconNode$w);
   /**
    * @license lucide-react v0.554.0 - ISC
    *
    * This source code is licensed under the ISC license.
    * See the LICENSE file in the root directory of this source tree.
    */
-  const __iconNode$t = [
+  const __iconNode$v = [
     ["path", { d: "M5 12h14", key: "1ays0h" }],
     ["path", { d: "m12 5 7 7-7 7", key: "xquz4c" }]
   ];
-  const ArrowRight = createLucideIcon("arrow-right", __iconNode$t);
+  const ArrowRight = createLucideIcon("arrow-right", __iconNode$v);
   /**
    * @license lucide-react v0.554.0 - ISC
    *
    * This source code is licensed under the ISC license.
    * See the LICENSE file in the root directory of this source tree.
    */
-  const __iconNode$s = [
+  const __iconNode$u = [
     ["path", { d: "M12 7v14", key: "1akyts" }],
     [
       "path",
@@ -14967,15 +14967,39 @@ Please change the parent <Route path="${parentPath}"> to <Route path="${parentPa
       }
     ]
   ];
-  const BookOpen = createLucideIcon("book-open", __iconNode$s);
+  const BookOpen = createLucideIcon("book-open", __iconNode$u);
   /**
    * @license lucide-react v0.554.0 - ISC
    *
    * This source code is licensed under the ISC license.
    * See the LICENSE file in the root directory of this source tree.
    */
-  const __iconNode$r = [["path", { d: "m9 18 6-6-6-6", key: "mthhwq" }]];
-  const ChevronRight = createLucideIcon("chevron-right", __iconNode$r);
+  const __iconNode$t = [["path", { d: "m9 18 6-6-6-6", key: "mthhwq" }]];
+  const ChevronRight = createLucideIcon("chevron-right", __iconNode$t);
+  /**
+   * @license lucide-react v0.554.0 - ISC
+   *
+   * This source code is licensed under the ISC license.
+   * See the LICENSE file in the root directory of this source tree.
+   */
+  const __iconNode$s = [
+    ["circle", { cx: "12", cy: "12", r: "10", key: "1mglay" }],
+    ["line", { x1: "12", x2: "12", y1: "8", y2: "12", key: "1pkeuh" }],
+    ["line", { x1: "12", x2: "12.01", y1: "16", y2: "16", key: "4dfq90" }]
+  ];
+  const CircleAlert = createLucideIcon("circle-alert", __iconNode$s);
+  /**
+   * @license lucide-react v0.554.0 - ISC
+   *
+   * This source code is licensed under the ISC license.
+   * See the LICENSE file in the root directory of this source tree.
+   */
+  const __iconNode$r = [
+    ["circle", { cx: "12", cy: "12", r: "10", key: "1mglay" }],
+    ["path", { d: "m16 12-4-4-4 4", key: "177agl" }],
+    ["path", { d: "M12 16V8", key: "1sbj14" }]
+  ];
+  const CircleArrowUp = createLucideIcon("circle-arrow-up", __iconNode$r);
   /**
    * @license lucide-react v0.554.0 - ISC
    *
@@ -14983,11 +15007,10 @@ Please change the parent <Route path="${parentPath}"> to <Route path="${parentPa
    * See the LICENSE file in the root directory of this source tree.
    */
   const __iconNode$q = [
-    ["circle", { cx: "12", cy: "12", r: "10", key: "1mglay" }],
-    ["line", { x1: "12", x2: "12", y1: "8", y2: "12", key: "1pkeuh" }],
-    ["line", { x1: "12", x2: "12.01", y1: "16", y2: "16", key: "4dfq90" }]
+    ["path", { d: "M21.801 10A10 10 0 1 1 17 3.335", key: "yps3ct" }],
+    ["path", { d: "m9 11 3 3L22 4", key: "1pflzl" }]
   ];
-  const CircleAlert = createLucideIcon("circle-alert", __iconNode$q);
+  const CircleCheckBig = createLucideIcon("circle-check-big", __iconNode$q);
   /**
    * @license lucide-react v0.554.0 - ISC
    *
@@ -14995,10 +15018,10 @@ Please change the parent <Route path="${parentPath}"> to <Route path="${parentPa
    * See the LICENSE file in the root directory of this source tree.
    */
   const __iconNode$p = [
-    ["path", { d: "M21.801 10A10 10 0 1 1 17 3.335", key: "yps3ct" }],
-    ["path", { d: "m9 11 3 3L22 4", key: "1pflzl" }]
+    ["circle", { cx: "12", cy: "12", r: "10", key: "1mglay" }],
+    ["path", { d: "m9 12 2 2 4-4", key: "dzmm74" }]
   ];
-  const CircleCheckBig = createLucideIcon("circle-check-big", __iconNode$p);
+  const CircleCheck = createLucideIcon("circle-check", __iconNode$p);
   /**
    * @license lucide-react v0.554.0 - ISC
    *
@@ -15006,17 +15029,6 @@ Please change the parent <Route path="${parentPath}"> to <Route path="${parentPa
    * See the LICENSE file in the root directory of this source tree.
    */
   const __iconNode$o = [
-    ["circle", { cx: "12", cy: "12", r: "10", key: "1mglay" }],
-    ["path", { d: "m9 12 2 2 4-4", key: "dzmm74" }]
-  ];
-  const CircleCheck = createLucideIcon("circle-check", __iconNode$o);
-  /**
-   * @license lucide-react v0.554.0 - ISC
-   *
-   * This source code is licensed under the ISC license.
-   * See the LICENSE file in the root directory of this source tree.
-   */
-  const __iconNode$n = [
     ["path", { d: "M12 20v2", key: "1lh1kg" }],
     ["path", { d: "M12 2v2", key: "tus03m" }],
     ["path", { d: "M17 20v2", key: "1rnc9c" }],
@@ -15032,7 +15044,19 @@ Please change the parent <Route path="${parentPath}"> to <Route path="${parentPa
     ["rect", { x: "4", y: "4", width: "16", height: "16", rx: "2", key: "1vbyd7" }],
     ["rect", { x: "8", y: "8", width: "8", height: "8", rx: "1", key: "z9xiuo" }]
   ];
-  const Cpu = createLucideIcon("cpu", __iconNode$n);
+  const Cpu = createLucideIcon("cpu", __iconNode$o);
+  /**
+   * @license lucide-react v0.554.0 - ISC
+   *
+   * This source code is licensed under the ISC license.
+   * See the LICENSE file in the root directory of this source tree.
+   */
+  const __iconNode$n = [
+    ["path", { d: "M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8", key: "1357e3" }],
+    ["path", { d: "M3 3v5h5", key: "1xhq8a" }],
+    ["path", { d: "M12 7v5l4 2", key: "1fdv2h" }]
+  ];
+  const History = createLucideIcon("history", __iconNode$n);
   /**
    * @license lucide-react v0.554.0 - ISC
    *
@@ -15040,11 +15064,11 @@ Please change the parent <Route path="${parentPath}"> to <Route path="${parentPa
    * See the LICENSE file in the root directory of this source tree.
    */
   const __iconNode$m = [
-    ["path", { d: "M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8", key: "1357e3" }],
-    ["path", { d: "M3 3v5h5", key: "1xhq8a" }],
-    ["path", { d: "M12 7v5l4 2", key: "1fdv2h" }]
+    ["path", { d: "m15.5 7.5 2.3 2.3a1 1 0 0 0 1.4 0l2.1-2.1a1 1 0 0 0 0-1.4L19 4", key: "g0fldk" }],
+    ["path", { d: "m21 2-9.6 9.6", key: "1j0ho8" }],
+    ["circle", { cx: "7.5", cy: "15.5", r: "5.5", key: "yqb3hr" }]
   ];
-  const History = createLucideIcon("history", __iconNode$m);
+  const Key = createLucideIcon("key", __iconNode$m);
   /**
    * @license lucide-react v0.554.0 - ISC
    *
@@ -15052,32 +15076,32 @@ Please change the parent <Route path="${parentPath}"> to <Route path="${parentPa
    * See the LICENSE file in the root directory of this source tree.
    */
   const __iconNode$l = [
-    ["path", { d: "m15.5 7.5 2.3 2.3a1 1 0 0 0 1.4 0l2.1-2.1a1 1 0 0 0 0-1.4L19 4", key: "g0fldk" }],
-    ["path", { d: "m21 2-9.6 9.6", key: "1j0ho8" }],
-    ["circle", { cx: "7.5", cy: "15.5", r: "5.5", key: "yqb3hr" }]
-  ];
-  const Key = createLucideIcon("key", __iconNode$l);
-  /**
-   * @license lucide-react v0.554.0 - ISC
-   *
-   * This source code is licensed under the ISC license.
-   * See the LICENSE file in the root directory of this source tree.
-   */
-  const __iconNode$k = [
     ["rect", { width: "7", height: "9", x: "3", y: "3", rx: "1", key: "10lvy0" }],
     ["rect", { width: "7", height: "5", x: "14", y: "3", rx: "1", key: "16une8" }],
     ["rect", { width: "7", height: "9", x: "14", y: "12", rx: "1", key: "1hutg5" }],
     ["rect", { width: "7", height: "5", x: "3", y: "16", rx: "1", key: "ldoo1y" }]
   ];
-  const LayoutDashboard = createLucideIcon("layout-dashboard", __iconNode$k);
+  const LayoutDashboard = createLucideIcon("layout-dashboard", __iconNode$l);
   /**
    * @license lucide-react v0.554.0 - ISC
    *
    * This source code is licensed under the ISC license.
    * See the LICENSE file in the root directory of this source tree.
    */
-  const __iconNode$j = [["path", { d: "M21 12a9 9 0 1 1-6.219-8.56", key: "13zald" }]];
-  const LoaderCircle = createLucideIcon("loader-circle", __iconNode$j);
+  const __iconNode$k = [["path", { d: "M21 12a9 9 0 1 1-6.219-8.56", key: "13zald" }]];
+  const LoaderCircle = createLucideIcon("loader-circle", __iconNode$k);
+  /**
+   * @license lucide-react v0.554.0 - ISC
+   *
+   * This source code is licensed under the ISC license.
+   * See the LICENSE file in the root directory of this source tree.
+   */
+  const __iconNode$j = [
+    ["path", { d: "m16 17 5-5-5-5", key: "1bji2h" }],
+    ["path", { d: "M21 12H9", key: "dn1m92" }],
+    ["path", { d: "M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4", key: "1uf3rs" }]
+  ];
+  const LogOut = createLucideIcon("log-out", __iconNode$j);
   /**
    * @license lucide-react v0.554.0 - ISC
    *
@@ -25688,9 +25712,9 @@ Please change the parent <Route path="${parentPath}"> to <Route path="${parentPa
     });
   }
   class LiveMusic {
-    constructor(apiClient, auth, webSocketFactory) {
+    constructor(apiClient, auth2, webSocketFactory) {
       this.apiClient = apiClient;
-      this.auth = auth;
+      this.auth = auth2;
       this.webSocketFactory = webSocketFactory;
     }
     /**
@@ -25902,9 +25926,9 @@ Please change the parent <Route path="${parentPath}"> to <Route path="${parentPa
     });
   }
   class Live {
-    constructor(apiClient, auth, webSocketFactory) {
+    constructor(apiClient, auth2, webSocketFactory) {
       this.apiClient = apiClient;
-      this.auth = auth;
+      this.auth = auth2;
       this.webSocketFactory = webSocketFactory;
       this.music = new LiveMusic(this.apiClient, this.auth, this.webSocketFactory);
     }
@@ -30278,9 +30302,9 @@ Please change the parent <Route path="${parentPath}"> to <Route path="${parentPa
         }
       }
       this.apiVersion = options.apiVersion;
-      const auth = new WebAuth(this.apiKey);
+      const auth2 = new WebAuth(this.apiKey);
       this.apiClient = new ApiClient({
-        auth,
+        auth: auth2,
         apiVersion: this.apiVersion,
         apiKey: this.apiKey,
         vertexai: this.vertexai,
@@ -30290,7 +30314,7 @@ Please change the parent <Route path="${parentPath}"> to <Route path="${parentPa
         downloader: new BrowserDownloader()
       });
       this.models = new Models(this.apiClient);
-      this.live = new Live(this.apiClient, auth, new BrowserWebSocketFactory());
+      this.live = new Live(this.apiClient, auth2, new BrowserWebSocketFactory());
       this.batches = new Batches(this.apiClient);
       this.chats = new Chats(this.models, this.apiClient);
       this.caches = new Caches(this.apiClient);
@@ -32280,9 +32304,11 @@ Please change the parent <Route path="${parentPath}"> to <Route path="${parentPa
     const [listeningDone, setListeningDone] = reactExports.useState(false);
     const [writingDone, setWritingDone] = reactExports.useState(false);
     reactExports.useEffect(() => {
-      const lHistory = localStorage.getItem("ielts_listening_history");
+      const uid = localStorage.getItem("ielts_uid");
+      if (!uid) return;
+      const lHistory = localStorage.getItem(`ielts_listening_history_${uid}`) || localStorage.getItem("ielts_listening_history");
       if (lHistory && JSON.parse(lHistory).length > 0) setListeningDone(true);
-      const wHistory = localStorage.getItem("ielts_writing_history");
+      const wHistory = localStorage.getItem(`ielts_writing_history_${uid}`) || localStorage.getItem("ielts_writing_history");
       if (wHistory && JSON.parse(wHistory).length > 0) setWritingDone(true);
     }, []);
     return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "space-y-6 md:space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700", children: [
@@ -32387,19 +32413,48 @@ Please change the parent <Route path="${parentPath}"> to <Route path="${parentPa
   const useTest = () => reactExports.useContext(TestContext);
   const App = () => {
     const [isDark, setIsDark] = reactExports.useState(true);
-    const [onboarded, setOnboarded] = reactExports.useState(() => {
-      return localStorage.getItem("ielts_ace_onboarded") === "true";
-    });
-    const [scores, setScores] = reactExports.useState(() => {
-      const saved = localStorage.getItem("ielts_scores");
-      return saved ? JSON.parse(saved) : null;
-    });
+    const [user, setUser] = reactExports.useState(null);
+    const [onboarded, setOnboarded] = reactExports.useState(false);
+    const [scores, setScores] = reactExports.useState(null);
     const [hasKey, setHasKey] = reactExports.useState(false);
     const [xp, setXp] = reactExports.useState(0);
     const [level, setLevel] = reactExports.useState(1);
     const [listeningTest, setListeningTest] = reactExports.useState(null);
     const [readingTest, setReadingTest] = reactExports.useState(null);
     const [writingTest, setWritingTest] = reactExports.useState(null);
+    const [apiKeyInput, setApiKeyInput] = reactExports.useState("");
+    reactExports.useEffect(() => {
+      const checkAuth = () => {
+        const uid = localStorage.getItem("ielts_uid");
+        const email = localStorage.getItem("ielts_email");
+        const isGuest = localStorage.getItem("ielts_guest") === "true";
+        if (uid) {
+          setUser({ uid, email, isGuest });
+          const savedScores = localStorage.getItem(`ielts_scores_${uid}`) || localStorage.getItem("ielts_scores");
+          setScores(savedScores ? JSON.parse(savedScores) : null);
+          const savedOnboarded = localStorage.getItem(`ielts_ace_onboarded_${uid}`) === "true";
+          setOnboarded(savedOnboarded);
+          const storedKey = localStorage.getItem(`gemini_api_key_${uid}`);
+          if (storedKey) {
+            setGeminiApiKey(storedKey);
+            setHasKey(true);
+          } else {
+            setHasKey(false);
+            setGeminiApiKey("");
+          }
+        } else {
+          setUser(null);
+          setScores(null);
+          setOnboarded(false);
+          setHasKey(false);
+          setGeminiApiKey("");
+        }
+      };
+      checkAuth();
+      const handleAuthChange = () => checkAuth();
+      window.addEventListener("auth-change", handleAuthChange);
+      return () => window.removeEventListener("auth-change", handleAuthChange);
+    }, []);
     const addXP = (amount) => {
       const newXp = xp + amount;
       setXp(newXp);
@@ -32411,46 +32466,85 @@ Please change the parent <Route path="${parentPath}"> to <Route path="${parentPa
       if (isDark) document.documentElement.classList.add("dark");
       else document.documentElement.classList.remove("dark");
     }, [isDark]);
-    const [apiKeyInput, setApiKeyInput] = reactExports.useState("");
-    reactExports.useEffect(() => {
-      const storedKey = localStorage.getItem("gemini_api_key");
-      if (storedKey) {
-        setGeminiApiKey(storedKey);
-        setHasKey(true);
-      }
-    }, []);
     const handleKeySubmit = (e) => {
       e.preventDefault();
-      if (apiKeyInput.trim().length > 10) {
-        setGeminiApiKey(apiKeyInput.trim());
-        localStorage.setItem("gemini_api_key", apiKeyInput.trim());
+      if (apiKeyInput.trim().length > 10 && user) {
+        const key = apiKeyInput.trim();
+        setGeminiApiKey(key);
+        localStorage.setItem(`gemini_api_key_${user.uid}`, key);
         setHasKey(true);
       }
     };
     const clearKey = () => {
-      localStorage.removeItem("gemini_api_key");
-      setHasKey(false);
-      setGeminiApiKey("");
-      window.location.reload();
+      if (user) {
+        localStorage.removeItem(`gemini_api_key_${user.uid}`);
+        setHasKey(false);
+        setGeminiApiKey("");
+      }
     };
     const toggleTheme = () => setIsDark(!isDark);
     const handleDiagnosticComplete = (results) => {
+      if (!user) return;
       setScores(results);
-      localStorage.setItem("ielts_scores", JSON.stringify(results));
+      localStorage.setItem(`ielts_scores_${user.uid}`, JSON.stringify(results));
       addXP(500);
       setOnboarded(true);
-      localStorage.setItem("ielts_ace_onboarded", "true");
+      localStorage.setItem(`ielts_ace_onboarded_${user.uid}`, "true");
     };
-    if (!hasKey) {
+    const updateScore = (section, score) => {
+      if (!user) return;
+      const newScores = __spreadProps(__spreadValues({}, scores), { [section]: score });
+      setScores(newScores);
+      localStorage.setItem(`ielts_scores_${user.uid}`, JSON.stringify(newScores));
+    };
+    if (!user) {
       return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: `min-h-screen w-full flex flex-col items-center justify-center bg-black text-white relative overflow-hidden font-sans ${isDark ? "dark" : ""}`, children: [
         /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-10" }),
         /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "absolute top-0 -left-20 w-96 h-96 bg-cyan-500/10 rounded-full blur-3xl animate-pulse" }),
         /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "absolute bottom-0 -right-20 w-96 h-96 bg-violet-500/10 rounded-full blur-3xl animate-pulse delay-700" }),
-        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "z-10 text-center space-y-8 p-8 max-w-md", children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "z-10 text-center space-y-8 p-8 max-w-md w-full", children: [
           /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "w-20 h-20 mx-auto bg-gradient-to-br from-cyan-500 to-blue-600 rounded-3xl flex items-center justify-center shadow-2xl shadow-cyan-500/30", children: /* @__PURE__ */ jsxRuntimeExports.jsx(Zap, { size: 40, className: "text-white", fill: "currentColor" }) }),
           /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "space-y-2", children: [
             /* @__PURE__ */ jsxRuntimeExports.jsx("h1", { className: "text-5xl font-black tracking-tighter bg-clip-text text-transparent bg-gradient-to-r from-white to-slate-400", children: "IELTS ACE" }),
             /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-cyan-400 font-mono text-sm tracking-[0.2em]", children: "NEURAL PREPARATION SYSTEM" })
+          ] }),
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "space-y-4 pt-8", children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsxs(
+              "button",
+              {
+                onClick: () => window.loginWithGoogle(),
+                className: "group relative w-full py-4 bg-white text-black rounded-xl font-bold text-lg overflow-hidden transition-all hover:scale-[1.02] hover:shadow-xl hover:shadow-white/10",
+                children: [
+                  /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "absolute inset-0 bg-gradient-to-r from-cyan-400 via-blue-500 to-purple-600 opacity-0 group-hover:opacity-10 transition-opacity" }),
+                  /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { className: "flex items-center justify-center gap-2", children: [
+                    /* @__PURE__ */ jsxRuntimeExports.jsx(User, { size: 20 }),
+                    " Login with Google"
+                  ] })
+                ]
+              }
+            ),
+            /* @__PURE__ */ jsxRuntimeExports.jsx(
+              "button",
+              {
+                onClick: () => window.startAsGuest(),
+                className: "w-full py-4 bg-white/5 border border-white/10 text-slate-300 rounded-xl font-bold text-sm hover:bg-white/10 transition-all",
+                children: "Continue as Guest"
+              }
+            )
+          ] })
+        ] })
+      ] });
+    }
+    if (!hasKey) {
+      return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: `min-h-screen w-full flex flex-col items-center justify-center bg-black text-white relative overflow-hidden font-sans ${isDark ? "dark" : ""}`, children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-10" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "z-10 text-center space-y-8 p-8 max-w-md w-full", children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center justify-center gap-2 text-sm text-slate-400 mb-8", children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx(User, { size: 16 }),
+            /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { children: [
+              "Logged in as ",
+              user.isGuest ? "Guest" : user.email
+            ] })
           ] }),
           /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "bg-white/5 border border-white/10 rounded-2xl p-6 text-left space-y-4 backdrop-blur-sm", children: [
             /* @__PURE__ */ jsxRuntimeExports.jsxs("h3", { className: "text-white font-bold flex items-center gap-2", children: [
@@ -32497,21 +32591,13 @@ Please change the parent <Route path="${parentPath}"> to <Route path="${parentPa
               }
             )
           ] }),
-          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "pt-8 border-t border-white/5 flex flex-col items-center gap-4", children: [
-            /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "text-[10px] text-slate-600 uppercase tracking-wider", children: "Powered by Gemini 2.5 Flash & 3.0 Pro" }),
-            /* @__PURE__ */ jsxRuntimeExports.jsxs("a", { href: "https://www.linkedin.com/in/abhnv07/", target: "_blank", rel: "noopener noreferrer", className: "flex items-center gap-2 text-xs text-slate-500 hover:text-white transition-colors group", children: [
-              /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: "Built with ❤️ by Abhinav" }),
-              /* @__PURE__ */ jsxRuntimeExports.jsx("svg", { className: "w-4 h-4 fill-current text-slate-600 group-hover:text-[#0077b5] transition-colors", viewBox: "0 0 24 24", children: /* @__PURE__ */ jsxRuntimeExports.jsx("path", { d: "M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.239-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z" }) })
-            ] })
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("button", { onClick: () => window.logoutUser(), className: "text-xs text-slate-500 hover:text-white flex items-center justify-center gap-2 mx-auto mt-8", children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx(LogOut, { size: 14 }),
+            " Not you? Log out"
           ] })
         ] })
       ] });
     }
-    const updateScore = (section, score) => {
-      const newScores = __spreadProps(__spreadValues({}, scores), { [section]: score });
-      setScores(newScores);
-      localStorage.setItem("ielts_scores", JSON.stringify(newScores));
-    };
     return /* @__PURE__ */ jsxRuntimeExports.jsx(ThemeContext.Provider, { value: { isDark, toggleTheme }, children: /* @__PURE__ */ jsxRuntimeExports.jsx(XPContext.Provider, { value: { xp, addXP, level }, children: /* @__PURE__ */ jsxRuntimeExports.jsx(ScoreContext.Provider, { value: { scores, updateScore }, children: /* @__PURE__ */ jsxRuntimeExports.jsx(TestContext.Provider, { value: { listeningTest, setListeningTest, readingTest, setReadingTest, writingTest, setWritingTest }, children: /* @__PURE__ */ jsxRuntimeExports.jsxs(HashRouter, { children: [
       /* @__PURE__ */ jsxRuntimeExports.jsx(ScrollToTop, {}),
       /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "min-h-screen bg-slate-50 dark:bg-black text-slate-900 dark:text-slate-100 transition-colors duration-300 pb-20 md:pb-0 font-sans selection:bg-cyan-500/30 overflow-x-hidden", children: !onboarded ? /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "p-4 max-w-4xl mx-auto min-h-screen flex flex-col justify-start pt-20", children: [
@@ -32531,7 +32617,7 @@ Please change the parent <Route path="${parentPath}"> to <Route path="${parentPa
             /* @__PURE__ */ jsxRuntimeExports.jsx(SidebarItem, { to: "/speaking", icon: Mic, label: "Speaking" }),
             /* @__PURE__ */ jsxRuntimeExports.jsx(SidebarItem, { to: "/veo", icon: Video, label: "Visuals" })
           ] }),
-          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "p-6 border-t border-slate-100 dark:border-white/10", children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "p-6 border-t border-slate-100 dark:border-white/10 space-y-2", children: [
             /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-3 mb-4 px-2", children: [
               /* @__PURE__ */ jsxRuntimeExports.jsx(Trophy, { size: 16, className: "text-yellow-500" }),
               /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { className: "text-xs font-bold uppercase text-slate-500 dark:text-slate-400", children: [
@@ -32540,13 +32626,21 @@ Please change the parent <Route path="${parentPath}"> to <Route path="${parentPa
               ] })
             ] }),
             /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "w-full h-1.5 bg-slate-100 dark:bg-white/10 rounded-full overflow-hidden mb-4", children: /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "h-full bg-gradient-to-r from-cyan-400 to-blue-500", style: { width: `${xp % 1e3 / 10}%` } }) }),
+            user.isGuest && /* @__PURE__ */ jsxRuntimeExports.jsxs("button", { onClick: () => window.upgradeToGoogle(), className: "w-full flex items-center justify-center gap-2 text-xs font-bold text-white bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-400 hover:to-blue-400 py-2 rounded-lg transition-all shadow-lg shadow-cyan-500/20 mb-2", children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsx(CircleArrowUp, { size: 14 }),
+              " Upgrade Account"
+            ] }),
             /* @__PURE__ */ jsxRuntimeExports.jsxs("button", { onClick: toggleTheme, className: "w-full flex items-center justify-center gap-2 text-xs font-bold text-slate-500 hover:text-cyan-600 py-2 rounded-lg hover:bg-slate-50 dark:hover:bg-white/5 transition-all", children: [
               isDark ? /* @__PURE__ */ jsxRuntimeExports.jsx(Sun, { size: 14 }) : /* @__PURE__ */ jsxRuntimeExports.jsx(Moon, { size: 14 }),
               " Toggle Mode"
             ] }),
-            /* @__PURE__ */ jsxRuntimeExports.jsxs("button", { onClick: clearKey, className: "w-full flex items-center justify-center gap-2 text-xs font-bold text-slate-500 hover:text-red-500 py-2 rounded-lg hover:bg-slate-50 dark:hover:bg-white/5 transition-all mt-1", children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsxs("button", { onClick: clearKey, className: "w-full flex items-center justify-center gap-2 text-xs font-bold text-slate-500 hover:text-red-500 py-2 rounded-lg hover:bg-slate-50 dark:hover:bg-white/5 transition-all", children: [
               /* @__PURE__ */ jsxRuntimeExports.jsx(Key, { size: 14 }),
               " Change API Key"
+            ] }),
+            /* @__PURE__ */ jsxRuntimeExports.jsxs("button", { onClick: () => window.logoutUser(), className: "w-full flex items-center justify-center gap-2 text-xs font-bold text-slate-500 hover:text-red-500 py-2 rounded-lg hover:bg-slate-50 dark:hover:bg-white/5 transition-all", children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsx(LogOut, { size: 14 }),
+              " Log Out"
             ] })
           ] })
         ] }),
@@ -32583,7 +32677,82 @@ Please change the parent <Route path="${parentPath}"> to <Route path="${parentPa
   } else {
     mount();
   }
-})();</script>
+  const firebaseConfig = {
+    apiKey: "AIzaSyDInQWPq-TdSJGSUdRPV5A98dhYGSHtIOY",
+    authDomain: "ielts-prac.firebaseapp.com",
+    projectId: "ielts-prac",
+    storageBucket: "ielts-prac.firebasestorage.app",
+    messagingSenderId: "907025192758",
+    appId: "1:907025192758:web:9751827c2e4fdd61600597",
+    measurementId: "G-L1CGX452RB"
+  };
+  const app$1 = firebaseApp_js2.initializeApp(firebaseConfig);
+  firebaseAnalytics_js2.getAnalytics(app$1);
+  const app = firebaseApp_js2.getApp();
+  const auth = firebaseAuth_js2.getAuth(app);
+  const googleProvider = new firebaseAuth_js2.GoogleAuthProvider();
+  window.loginWithGoogle = function() {
+    return __async(this, null, function* () {
+      try {
+        const result = yield firebaseAuth_js2.signInWithPopup(auth, googleProvider);
+        const user = result.user;
+        localStorage.setItem("ielts_uid", user.uid);
+        localStorage.setItem("ielts_email", user.email || "");
+        localStorage.removeItem("ielts_guest");
+        window.dispatchEvent(new Event("auth-change"));
+      } catch (err) {
+        console.error(err);
+        alert("Google sign in failed: " + err.message);
+      }
+    });
+  };
+  window.startAsGuest = function() {
+    return __async(this, null, function* () {
+      try {
+        const result = yield firebaseAuth_js2.signInAnonymously(auth);
+        const user = result.user;
+        localStorage.setItem("ielts_uid", user.uid);
+        localStorage.setItem("ielts_guest", "true");
+        window.dispatchEvent(new Event("auth-change"));
+      } catch (err) {
+        console.error(err);
+        alert("Guest login failed: " + err.message);
+      }
+    });
+  };
+  window.upgradeToGoogle = function() {
+    return __async(this, null, function* () {
+      try {
+        const result = yield firebaseAuth_js2.linkWithPopup(auth.currentUser, googleProvider);
+        const user = result.user;
+        localStorage.setItem("ielts_uid", user.uid);
+        localStorage.setItem("ielts_email", user.email);
+        localStorage.removeItem("ielts_guest");
+        window.dispatchEvent(new Event("auth-change"));
+      } catch (err) {
+        console.error(err);
+        alert("Account upgrade failed: " + err.message);
+      }
+    });
+  };
+  window.logoutUser = function() {
+    return __async(this, null, function* () {
+      yield firebaseAuth_js2.signOut(auth);
+      localStorage.removeItem("ielts_uid");
+      localStorage.removeItem("ielts_email");
+      localStorage.removeItem("ielts_guest");
+      window.dispatchEvent(new Event("auth-change"));
+    });
+  };
+  firebaseAuth_js2.onAuthStateChanged(auth, (user) => {
+    if (user) {
+      localStorage.setItem("ielts_uid", user.uid);
+    } else {
+      localStorage.removeItem("ielts_uid");
+    }
+    window.dispatchEvent(new Event("auth-change"));
+  });
+})(firebaseApp_js, firebaseAnalytics_js, firebaseAuth_js);</script>
 </head>
 
 <body
@@ -32594,6 +32763,10 @@ Please change the parent <Route path="${parentPath}"> to <Route path="${parentPa
       Loading Application...
     </div>
   </div>
+
+  <!-- Firebase App & Analytics -->
+
+  <!-- Firebase Auth -->
 </body>
 
 </html>
