@@ -152,7 +152,7 @@ import { initializeApp, getApp } from "firebase/app";
 import { getAnalytics } from "firebase/analytics";
 import { getAuth, GoogleAuthProvider, signInWithPopup, signInAnonymously, linkWithPopup, signOut, onAuthStateChanged } from "firebase/auth";
 var require_index_001 = __commonJS({
-  "index-BZ7RHaxB.js"(exports) {
+  "index-Bx9clc0P.js"(exports) {
     (function polyfill() {
       const relList = document.createElement("link").relList;
       if (relList && relList.supports && relList.supports("modulepreload")) {
@@ -30387,23 +30387,57 @@ Please change the parent <Route path="${parentPath}"> to <Route path="${parentPa
       if (!apiKey) throw new Error("API Key not set");
       return new GoogleGenAI({ apiKey });
     };
-    const generateJSON = (model, prompt, schema) => __async(null, null, function* () {
-      const ai = getClient();
+    const retryWithBackoff = (fn, retries = 3, delay = 1e3) => __async(null, null, function* () {
+      var _a, _b;
       try {
-        const config = { responseMimeType: "application/json" };
-        if (schema) config.responseSchema = schema;
-        const response = yield ai.models.generateContent({
-          model,
-          contents: prompt,
-          config
-        });
-        const text = response.text;
-        if (!text) throw new Error("No text returned from model");
-        return JSON.parse(text);
+        return yield fn();
       } catch (error) {
-        console.error("Gemini JSON Error:", error);
+        if (retries > 0 && ((error == null ? void 0 : error.status) === 429 || ((_a = error == null ? void 0 : error.message) == null ? void 0 : _a.includes("429")) || ((_b = error == null ? void 0 : error.message) == null ? void 0 : _b.includes("quota")))) {
+          console.warn(`Quota exceeded. Retrying in ${delay}ms... (${retries} retries left)`);
+          yield new Promise((resolve) => setTimeout(resolve, delay));
+          return retryWithBackoff(fn, retries - 1, delay * 2);
+        }
         throw error;
       }
+    });
+    const generateJSON = (model, prompt, schema) => __async(null, null, function* () {
+      const ai = getClient();
+      return retryWithBackoff(() => __async(null, null, function* () {
+        var _a, _b, _c;
+        try {
+          const config = { responseMimeType: "application/json" };
+          if (schema) config.responseSchema = schema;
+          const response = yield ai.models.generateContent({
+            model,
+            contents: prompt,
+            config
+          });
+          if (!response || !response.candidates || response.candidates.length === 0) {
+            console.error("Gemini API returned no candidates:", response);
+            throw new Error("AI generation failed: No response candidates received.");
+          }
+          let text = "";
+          try {
+            if (typeof response.text === "function") {
+              text = response.text();
+            } else {
+              text = response.text || "";
+            }
+          } catch (e) {
+            if ((_c = (_b = (_a = response.candidates[0].content) == null ? void 0 : _a.parts) == null ? void 0 : _b[0]) == null ? void 0 : _c.text) {
+              text = response.candidates[0].content.parts[0].text;
+            } else {
+              console.error("Failed to extract text from response:", response);
+              throw new Error("AI generation failed: Could not extract text from response.");
+            }
+          }
+          if (!text) throw new Error("No text returned from model");
+          return JSON.parse(text);
+        } catch (error) {
+          console.error("Gemini JSON Error:", error);
+          throw error;
+        }
+      }));
     });
     const generateListeningTest = (part = 1) => __async(null, null, function* () {
       let context = "";
@@ -30466,15 +30500,10 @@ Please change the parent <Route path="${parentPath}"> to <Route path="${parentPa
         required: ["topic", "script", "questions"]
       };
       try {
-        return yield generateJSON("gemini-2.0-flash", prompt, schema);
+        return yield generateJSON("gemini-2.5-flash-lite", prompt, schema);
       } catch (error) {
-        console.warn("Gemini 2.0 Flash failed, falling back to 1.5 Flash...", error);
-        try {
-          return yield generateJSON("gemini-1.5-flash", prompt, schema);
-        } catch (fallbackError) {
-          console.error("Listening Gen Fallback Error:", fallbackError);
-          return null;
-        }
+        console.error("Listening Gen Error:", error);
+        return null;
       }
     });
     const concatenateAudioBuffers = (buffers) => {
@@ -30597,7 +30626,7 @@ Please change the parent <Route path="${parentPath}"> to <Route path="${parentPa
         },
         required: ["title", "text", "questions"]
       };
-      return yield generateJSON("gemini-2.0-flash", prompt, schema);
+      return yield generateJSON("gemini-2.5-flash-lite", prompt, schema);
     });
     const generateWritingTask = (taskType) => __async(null, null, function* () {
       const prompt = `Generate an IELTS Writing ${taskType === "task1" ? "Task 1" : "Task 2"} prompt.
@@ -30649,7 +30678,7 @@ Please change the parent <Route path="${parentPath}"> to <Route path="${parentPa
         },
         required: ["promptText"]
       };
-      return yield generateJSON("gemini-2.0-flash", prompt, schema);
+      return yield generateJSON("gemini-2.5-flash-lite", prompt, schema);
     });
     const evaluateWriting = (essay, taskType, promptText) => __async(null, null, function* () {
       const prompt = `
@@ -30684,7 +30713,7 @@ Please change the parent <Route path="${parentPath}"> to <Route path="${parentPa
   - strengths: string[]
   - weaknesses: string[]
   `;
-      return generateJSON("gemini-2.0-flash", prompt, {
+      return generateJSON("gemini-2.5-flash-lite", prompt, {
         type: Type.OBJECT,
         properties: {
           band: { type: Type.NUMBER },
@@ -30708,7 +30737,7 @@ Please change the parent <Route path="${parentPath}"> to <Route path="${parentPa
     "part2": { "topic": "Describe a...", "bullets": ["You should say...", "...", "..."] },
     "part3": ["3 abstract follow-up questions related to part 2"]
   }`;
-      return generateJSON("gemini-2.0-flash", prompt);
+      return generateJSON("gemini-2.5-flash-lite", prompt);
     });
     const evaluateSpeakingSession = (transcript) => __async(null, null, function* () {
       const prompt = `Act as an IELTS Speaking examiner. Grade this transcript of a candidate's test.
@@ -30723,7 +30752,7 @@ Please change the parent <Route path="${parentPath}"> to <Route path="${parentPa
   - feedback (concise actionable advice)
   - perfectResponseExample (string): Pick one question the user answered poorly and write a Band 9 model answer for it.
   `;
-      return generateJSON("gemini-2.0-flash", prompt, {
+      return generateJSON("gemini-2.5-flash-lite", prompt, {
         type: Type.OBJECT,
         properties: {
           band: { type: Type.NUMBER },
@@ -30777,7 +30806,7 @@ Please change the parent <Route path="${parentPath}"> to <Route path="${parentPa
       "reading": { "passage": "...", "questions": [{ "id": "r1", "text": "...", "options": ["..."], "correctAnswer": "..." }] },
       "grammar": { "questions": [{ "id": "g1", "text": "...", "options": ["..."], "correctAnswer": "..." }] }
    }`;
-      return generateJSON("gemini-2.0-flash", prompt);
+      return generateJSON("gemini-2.5-flash-lite", prompt);
     });
     function base64ToUint8Array(base64) {
       const binaryString = atob(base64);
