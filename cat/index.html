@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Meme Detector</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            background-color: #1a1a1a;
+            color: white;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        .container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .view-box {
+            position: relative;
+            width: 640px;
+            height: 480px;
+            background: #000;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+        }
+
+        #video-feed {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transform: scaleX(-1);
+            /* Mirror effect */
+        }
+
+        #meme-display {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            background-color: white;
+        }
+
+        .status-badge {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-weight: bold;
+            font-size: 1.1em;
+            z-index: 10;
+        }
+
+        .status-open {
+            background-color: rgba(46, 204, 113, 0.9);
+            color: white;
+        }
+
+        .status-closed {
+            background-color: rgba(231, 76, 60, 0.9);
+            color: white;
+        }
+
+        h1 {
+            margin-bottom: 20px;
+        }
+
+        .loading {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 1.2em;
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 1350px) {
+            .view-box {
+                width: 480px;
+                height: 360px;
+            }
+        }
+    </style>
+    <!-- Import MediaPipe -->
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/face_mesh.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+</head>
+
+<body>
+    <h1>Meme Detector Web</h1>
+
+    <div class="container">
+        <div class="view-box">
+            <div id="camera-loading" class="loading">Loading Camera...</div>
+            <video id="video-feed" playsinline></video>
+            <div id="status-indicator" class="status-badge status-closed">Mouth: CLOSED</div>
+        </div>
+
+        <div class="view-box">
+            <img id="meme-display" src="blank.jpg" alt="Meme Display">
+        </div>
+    </div>
+
+    <script>
+        const videoElement = document.getElementById('video-feed');
+        const memeImage = document.getElementById('meme-display');
+        const statusIndicator = document.getElementById('status-indicator');
+        const cameraLoading = document.getElementById('camera-loading');
+
+        // Threshold logic - mirroring Python script
+        // Python used 100px on a likely 640x480 or similar frame.
+        // We will calculate relative height to be resolution independent or scale to match logic.
+        // Let's stick effectively to the logic: relative dist > threshold.
+        // Since MP coordinates are normalized [0, 1], we can multiply by height to get px.
+        const MOUTH_OPEN_THRESHOLD = 0.1; // 10% of screen height is a safe bet roughly for "open" or tune it.
+        // Python used 100px. If height is 480, 100/480 ~= 0.2. That's quite large. 
+        // Let's use a dynamic calibration or a reasonable fixed value. 
+        // 0.05 is usually enough for "open". Let's try 0.05 first.
+
+        function onResults(results) {
+            cameraLoading.style.display = 'none';
+
+            if (results.multiFaceLandmarks && results.multiFaceLandmarks.length > 0) {
+                const landmarks = results.multiFaceLandmarks[0];
+
+                // Landmark 13: Upper lip inner center
+                // Landmark 14: Lower lip inner center (Using 14 is better for inner mouth, 17 is bottom of lip)
+                // The python script used 13 and 18. 
+                // 13 is Upper Lip Inner
+                // 18 is Lower Lip Inner (in some mappings? Let's check visualization)
+                // Actually 13 and 14 are the inner lip centers in MP standard 468 mesh.
+                // We'll use 13 and 14 for the text-book definition of "mouth open".
+
+                const upperLip = landmarks[13];
+                const lowerLip = landmarks[14];
+
+                // Calculate Euclidean distance (normalized coords)
+                // Mainly vertical distance matters
+                const distance = Math.abs(upperLip.y - lowerLip.y);
+
+                // Sensitivity adjustment
+                // If distance > threshold -> Open
+                // 0.02 is a small opening. 0.05 is a wide "ah". 
+                // Start with 0.03
+
+                if (distance > 0.02) {
+                    setMouthState(true);
+                } else {
+                    setMouthState(false);
+                }
+            } else {
+                // No face detected
+                setMouthState(false);
+            }
+        }
+
+        let isMouthOpen = false;
+
+        function setMouthState(isOpen) {
+            if (isMouthOpen !== isOpen) {
+                isMouthOpen = isOpen;
+                if (isOpen) {
+                    memeImage.src = 'mouth.jpg';
+                    statusIndicator.textContent = "Mouth: OPEN";
+                    statusIndicator.className = "status-badge status-open";
+                } else {
+                    memeImage.src = 'blank.jpg';
+                    statusIndicator.textContent = "Mouth: CLOSED";
+                    statusIndicator.className = "status-badge status-closed";
+                }
+            }
+        }
+
+        // Initialize Face Mesh
+        const faceMesh = new FaceMesh({
+            locateFile: (file) => {
+                return `https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/${file}`;
+            }
+        });
+
+        faceMesh.setOptions({
+            maxNumFaces: 1,
+            refineLandmarks: true,
+            minDetectionConfidence: 0.5,
+            minTrackingConfidence: 0.5
+        });
+
+        faceMesh.onResults(onResults);
+
+        // Initialize Camera
+        const camera = new Camera(videoElement, {
+            onFrame: async () => {
+                await faceMesh.send({ image: videoElement });
+            },
+            width: 640,
+            height: 480
+        });
+
+        camera.start().catch(err => {
+            console.error(err);
+            statusIndicator.textContent = "Camera Error";
+            statusIndicator.style.backgroundColor = "red";
+        });
+    </script>
+</body>
+
+</html>
