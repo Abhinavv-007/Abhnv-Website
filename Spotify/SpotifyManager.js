@@ -1,0 +1,1063 @@
+import React, { useState, useEffect, useRef } from 'react';
+import { createRoot } from 'react-dom/client';
+import {
+  Users, CreditCard, Calendar, Settings, LogOut, Plus,
+  Trash2, Edit2, Check, X, Copy, ExternalLink, Shield,
+  Music, Radio, Mic2, Disc, Lock, User, Layout, Sun, Moon,
+  History, AlertCircle, CheckCircle2, Zap, MoreHorizontal,
+  Sparkles, Megaphone, Clock
+} from 'lucide-react';
+
+// FIREBASE IMPORTS
+import { initializeApp } from "firebase/app";
+import { getAuth, signInAnonymously, onAuthStateChanged } from "firebase/auth";
+import { getFirestore, doc, onSnapshot, setDoc, updateDoc } from "firebase/firestore";
+
+/**
+ * FIREBASE CONFIGURATION
+ */
+const firebaseConfig = {
+  apiKey: "AIzaSyCrnK_AMrd8jCgvr32Eg7jXONKILYoHcAk",
+  authDomain: "spotify-plan.firebaseapp.com",
+  projectId: "spotify-plan",
+  storageBucket: "spotify-plan.firebasestorage.app",
+  messagingSenderId: "694153967270",
+  appId: "1:694153967270:web:9e2e9ec753e29aa94fa667"
+};
+
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+
+// Define DocRef outside component for stability
+const APP_DOC_REF = doc(db, 'app', 'state');
+
+/**
+ * UTILITIES & CONSTANTS
+ */
+
+const THEMES = {
+  green: {
+    name: 'Spotify Green',
+    primary: 'bg-green-500/80',
+    primaryHover: 'hover:bg-green-600/80',
+    text: 'text-green-400',
+    border: 'border-green-500/30',
+    ring: 'focus:ring-green-500',
+    badge: 'bg-green-500/20 text-green-300',
+    gradient: 'from-green-500/40 to-emerald-900/40',
+    glow: 'shadow-green-500/20'
+  },
+  pink: {
+    name: 'Electric Pink',
+    primary: 'bg-pink-500/80',
+    primaryHover: 'hover:bg-pink-600/80',
+    text: 'text-pink-400',
+    border: 'border-pink-500/30',
+    ring: 'focus:ring-pink-500',
+    badge: 'bg-pink-500/20 text-pink-300',
+    gradient: 'from-pink-500/80 to-rose-900/80',
+    glow: 'shadow-pink-500/20'
+  },
+  blue: {
+    name: 'Deep Blue',
+    primary: 'bg-blue-500/80',
+    primaryHover: 'hover:bg-blue-600/80',
+    text: 'text-blue-400',
+    border: 'border-blue-500/30',
+    ring: 'focus:ring-blue-500',
+    badge: 'bg-blue-500/20 text-blue-300',
+    gradient: 'from-blue-500/80 to-indigo-900/80',
+    glow: 'shadow-blue-500/20'
+  },
+  yellow: {
+    name: 'Cyber Yellow',
+    primary: 'bg-yellow-400/80',
+    primaryHover: 'hover:bg-yellow-500/80',
+    text: 'text-yellow-400',
+    border: 'border-yellow-400/30',
+    ring: 'focus:ring-yellow-400',
+    badge: 'bg-yellow-400/20 text-yellow-300',
+    gradient: 'from-yellow-400/80 to-orange-900/80',
+    glow: 'shadow-yellow-500/20'
+  }
+};
+
+const INITIAL_LOCAL_STATE = {
+  plan: {
+    name: 'Premium Platinum',
+    cost: 299,
+    currency: '₹',
+    renewalDate: new Date(new Date().setDate(new Date().getDate() + 15)).toISOString().split('T')[0],
+    features: [
+      { id: 1, text: 'Up to 3 Platinum accounts', icon: 'Users' },
+      { id: 2, text: 'Lossless audio (24-bit/44.1 kHz)', icon: 'Zap' },
+      { id: 3, text: 'Download to listen offline', icon: 'Disc' },
+      { id: 4, text: 'Your personal AI DJ', icon: 'Radio' },
+      { id: 5, text: 'AI playlist creation', icon: 'Mic2' },
+      { id: 6, text: 'Playlist mixing', icon: 'Music' },
+    ]
+  },
+  announcement: {
+    text: 'Welcome to the Family Plan!',
+    show: false
+  },
+  members: [],
+  history: [
+    { id: 1, action: 'System initialized', timestamp: new Date().toISOString() }
+  ]
+};
+
+const getDaysRemaining = (dateString) => {
+  if (!dateString) return 0;
+  const target = new Date(dateString);
+  const now = new Date();
+  const diffTime = target - now;
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  return diffDays;
+};
+
+const extractSpotifyId = (url) => {
+  try {
+    if (!url.includes('spotify.com')) return url;
+    const urlObj = new URL(url);
+    const pathSegments = urlObj.pathname.split('/');
+    const userIndex = pathSegments.indexOf('user');
+    if (userIndex !== -1 && pathSegments[userIndex + 1]) {
+      return pathSegments[userIndex + 1];
+    }
+    return 'unknown-id';
+  } catch (e) {
+    return 'invalid-link';
+  }
+};
+
+const formatDate = (dateString) => {
+  if (!dateString) return 'Never';
+  return new Date(dateString).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+};
+
+/**
+ * COMPONENTS
+ */
+
+const Badge = ({ children, color = 'gray' }) => {
+  const styles = {
+    paid: `bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30 shadow-sm`,
+    unpaid: `bg-rose-500/20 text-rose-700 dark:text-rose-300 border border-rose-500/30 shadow-sm`,
+    gray: `bg-black/5 dark:bg-white/10 text-gray-600 dark:text-gray-300 border border-black/5 dark:border-white/10`
+  };
+
+  return (
+    <span className={`px-2.5 py-1 rounded-full text-[10px] uppercase font-bold tracking-wider flex items-center gap-1.5 shadow-sm ${styles[color] || styles.gray}`}>
+      {children}
+    </span>
+  );
+};
+
+const MemberCard = ({ member, slot, theme, isAdmin, onDelete, onEdit, onToggleStatus, onViewHistory }) => {
+  const themeStyles = THEMES[theme];
+  const isEmpty = !member;
+
+  if (isEmpty) {
+    return (
+      <div className={`group relative flex flex-col items-center justify-center h-64 border-2 border-dashed border-white/20 rounded-[2.5rem] p-6 transition-all duration-500 hover:border-${theme}-400/50 bg-white/5 hover:bg-white/10 backdrop-blur-md`}>
+        <div className="absolute top-6 right-6 text-xs font-black text-gray-300 dark:text-zinc-700 opacity-50">#{slot}</div>
+        <div className="p-5 rounded-full bg-white/60 dark:bg-zinc-800/60 mb-4 text-gray-300 dark:text-zinc-600 shadow-lg shadow-gray-200/50 dark:shadow-none transition-transform group-hover:scale-110 group-hover:text-gray-400 dark:group-hover:text-zinc-400 group-hover:-translate-y-1">
+          <User size={36} strokeWidth={1.5} />
+        </div>
+        <p className="text-sm font-bold text-gray-400 dark:text-zinc-500 tracking-wide">Available Slot</p>
+        {isAdmin && (
+          <button
+            onClick={() => onEdit(null, slot)}
+            className={`mt-5 px-5 py-2.5 rounded-full text-xs font-bold bg-white dark:bg-zinc-800 shadow-xl shadow-${theme}-500/10 border border-gray-100 dark:border-zinc-700 ${themeStyles.text} opacity-0 group-hover:opacity-100 translate-y-2 group-hover:translate-y-0 transition-all duration-300 hover:scale-105 active:scale-95`}
+          >
+            + Assign Member
+          </button>
+        )}
+      </div>
+    );
+  }
+
+  const copyId = () => {
+    navigator.clipboard.writeText(member.spotifyId);
+  };
+
+  const lastPayment = member.payments && member.payments.length > 0 ? member.payments[0] : null;
+  // Handle both new object structure and old string structure
+  const lastPaymentDate = lastPayment ? (typeof lastPayment === 'object' ? lastPayment.date : lastPayment) : null;
+
+  return (
+    <div className={`relative group bg-white/90 dark:bg-black/90 backdrop-blur-3xl border border-white/40 dark:border-white/10 rounded-[2.5rem] p-6 shadow-xl shadow-black/10 hover:shadow-${theme}-500/20 hover:-translate-y-2 transition-all duration-500 flex flex-col h-64 overflow-hidden`}>
+      <div className={`absolute inset-0 bg-gradient-to-br from-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none`}></div>
+      {/* Admin Controls */}
+      {isAdmin && (
+        <div className="absolute top-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-all duration-300 translate-x-2 group-hover:translate-x-0 z-10">
+          <button onClick={() => onToggleStatus(member.id)} title="Quick Toggle Status" className="p-2 rounded-full bg-white dark:bg-zinc-800 hover:bg-gray-50 dark:hover:bg-zinc-700 text-gray-500 dark:text-zinc-400 shadow-lg hover:text-emerald-500 transition-colors border border-gray-100 dark:border-zinc-700">
+            <CreditCard size={14} />
+          </button>
+          <button onClick={() => onEdit(member, slot)} title="Edit Details" className="p-2 rounded-full bg-white dark:bg-zinc-800 hover:bg-gray-50 dark:hover:bg-zinc-700 text-gray-500 dark:text-zinc-400 shadow-lg hover:text-blue-500 transition-colors border border-gray-100 dark:border-zinc-700">
+            <Edit2 size={14} />
+          </button>
+          <button onClick={() => onDelete(member.id)} title="Remove" className="p-2 rounded-full bg-white dark:bg-zinc-800 hover:bg-gray-50 dark:hover:bg-zinc-700 text-gray-500 dark:text-zinc-400 shadow-lg hover:text-rose-500 transition-colors border border-gray-100 dark:border-zinc-700">
+            <Trash2 size={14} />
+          </button>
+        </div>
+      )}
+
+      {/* Header */}
+      <div className="flex justify-between items-start mb-auto">
+        <div className="relative">
+          <div className={`w-18 h-18 rounded-[1.2rem] overflow-hidden ring-4 ring-white dark:ring-zinc-900/50 shadow-2xl ${member.status === 'paid' ? '' : 'grayscale opacity-70'} transition-all duration-300`}>
+            <img src={member.avatar} alt={member.name} className="w-16 h-16 object-cover" />
+          </div>
+          <div className="absolute -bottom-2 -right-2">
+            <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-black border-[3px] border-white dark:border-zinc-900 shadow-md ${member.status === 'paid' ? 'bg-gradient-to-br from-emerald-400 to-emerald-600 text-white' : 'bg-gradient-to-br from-rose-400 to-rose-600 text-white'}`}>
+              {slot}
+            </div>
+          </div>
+        </div>
+        <div className="mt-1 flex flex-col items-end">
+          <Badge color={member.status === 'paid' ? 'paid' : 'unpaid'}>
+            {member.status === 'paid' ? 'Paid' : 'Unpaid'}
+          </Badge>
+          {lastPaymentDate && (
+            <div className="flex items-end flex-col mt-1">
+              <span className="text-[10px] font-medium text-gray-400 dark:text-zinc-500">
+                Last: {formatDate(lastPaymentDate)}
+              </span>
+              <button
+                onClick={() => onViewHistory(member)}
+                className="mt-1 text-[10px] font-bold text-blue-500 hover:text-blue-600 hover:underline flex items-center gap-1"
+              >
+                <Clock size={10} /> View History
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Info */}
+      <div className="mb-5 mt-4">
+        <h3 className="font-bold text-xl text-gray-900 dark:text-white truncate tracking-tight drop-shadow-sm">{member.name}</h3>
+        <p className="text-xs font-semibold text-gray-400 dark:text-zinc-500 flex items-center gap-1.5 mt-1 uppercase tracking-wider">
+          <Shield size={10} className={themeStyles.text} /> Spotify Premium
+        </p>
+      </div>
+
+      {/* ID Section */}
+      <div className="bg-black/20 rounded-xl p-3 border border-white/10 flex items-center justify-between group-hover:border-white/20 transition-colors backdrop-blur-md">
+        <div className="flex flex-col overflow-hidden">
+          <span className="text-[9px] uppercase tracking-widest text-gray-400 dark:text-zinc-600 font-bold mb-0.5">Spotify ID</span>
+          <code className="text-xs font-mono font-medium dark:text-zinc-300 truncate text-gray-700">
+            {member.spotifyId}
+          </code>
+        </div>
+
+        <div className="flex gap-1 shrink-0">
+          <button onClick={copyId} className="p-2 rounded-lg hover:bg-white dark:hover:bg-zinc-800 text-gray-400 hover:text-gray-600 dark:hover:text-zinc-200 transition-all shadow-sm">
+            <Copy size={14} />
+          </button>
+          <a
+            href={member.spotifyUrl}
+            target="_blank"
+            rel="noreferrer"
+            className={`p-2 rounded-lg hover:bg-white dark:hover:bg-zinc-800 text-gray-400 hover:text-${theme}-500 transition-all shadow-sm`}
+          >
+            <ExternalLink size={14} />
+          </a>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const Modal = ({ isOpen, onClose, title, children }) => {
+  if (!isOpen) return null;
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-xl animate-in fade-in duration-200">
+      <div className="bg-white/90 dark:bg-zinc-900/90 w-full max-w-md rounded-[2rem] shadow-2xl border border-white/50 dark:border-white/10 overflow-hidden animate-in zoom-in-95 slide-in-from-bottom-5 duration-300 backdrop-blur-2xl">
+        <div className="flex justify-between items-center px-8 py-6 border-b border-gray-100 dark:border-white/5">
+          <h3 className="font-bold text-xl dark:text-white tracking-tight">{title}</h3>
+          <button onClick={onClose} className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-zinc-800 text-gray-400 transition-colors">
+            <X size={20} />
+          </button>
+        </div>
+        <div className="p-8 max-h-[80vh] overflow-y-auto custom-scrollbar">
+          {children}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+/**
+ * MAIN APP
+ */
+
+function SpotifyManager() {
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [isAdminViewMode, setIsAdminViewMode] = useState(true);
+  const [showLogin, setShowLogin] = useState(false);
+  const [activeTheme, setActiveTheme] = useState('green');
+  const [darkMode, setDarkMode] = useState(false);
+
+  const [data, setData] = useState(INITIAL_LOCAL_STATE);
+  const [loading, setLoading] = useState(true);
+
+  const [editingMember, setEditingMember] = useState(null);
+  const [historyMember, setHistoryMember] = useState(null);
+  const [showPlanSettings, setShowPlanSettings] = useState(false);
+
+  // State for forms
+  const [editForm, setEditForm] = useState({ name: '', url: '', status: 'paid', avatar: '', payments: [] });
+  const [planForm, setPlanForm] = useState({ renewalDate: '', name: '', cost: '', announcementText: '', showAnnouncement: false });
+  // New state for manual payment entry
+  const [manualPayment, setManualPayment] = useState({ date: '', amount: '' });
+
+  const usernameRef = useRef();
+  const passwordRef = useRef();
+
+  // INITIALIZATION: AUTH + SNAPSHOT
+  useEffect(() => {
+    let unsubscribe = () => { };
+
+    const initApp = async () => {
+      try {
+        await signInAnonymously(auth);
+      } catch (error) {
+        console.warn("Auth initialization warning:", error.message);
+      }
+
+      try {
+        unsubscribe = onSnapshot(APP_DOC_REF, async (docSnap) => {
+          if (docSnap.exists()) {
+            const serverData = docSnap.data();
+
+            const mappedData = {
+              plan: {
+                ...INITIAL_LOCAL_STATE.plan,
+                name: serverData.planName || INITIAL_LOCAL_STATE.plan.name,
+                cost: serverData.monthlyAmount || INITIAL_LOCAL_STATE.plan.cost,
+                renewalDate: serverData.renewalDate || INITIAL_LOCAL_STATE.plan.renewalDate,
+                features: serverData.features || INITIAL_LOCAL_STATE.plan.features
+              },
+              announcement: serverData.announcement || { text: '', show: false },
+              members: serverData.members || [],
+              history: serverData.history || []
+            };
+            setData(mappedData);
+          } else {
+            try {
+              const initialPayload = {
+                planName: INITIAL_LOCAL_STATE.plan.name,
+                monthlyAmount: INITIAL_LOCAL_STATE.plan.cost,
+                renewalDate: INITIAL_LOCAL_STATE.plan.renewalDate,
+                members: INITIAL_LOCAL_STATE.members,
+                history: INITIAL_LOCAL_STATE.history,
+                features: INITIAL_LOCAL_STATE.plan.features,
+                announcement: INITIAL_LOCAL_STATE.announcement
+              };
+              await setDoc(APP_DOC_REF, initialPayload);
+              setData(INITIAL_LOCAL_STATE);
+            } catch (seedError) {
+              console.warn("Could not seed initial data. Using local defaults.", seedError);
+              setData(INITIAL_LOCAL_STATE);
+            }
+          }
+          setLoading(false);
+        }, (error) => {
+          console.error("Firestore Snapshot Error:", error);
+          setLoading(false);
+        });
+      } catch (e) {
+        console.error("Firestore connection failed:", e);
+        setLoading(false);
+      }
+    };
+
+    initApp();
+
+    return () => {
+      if (unsubscribe) unsubscribe();
+    };
+  }, []);
+
+  // Theme Persistence
+  useEffect(() => {
+    const savedTheme = localStorage.getItem('spotify_manager_theme');
+    const savedMode = localStorage.getItem('spotify_manager_mode');
+    if (savedTheme) setActiveTheme(savedTheme);
+    if (savedMode) setDarkMode(savedMode === 'dark');
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem('spotify_manager_theme', activeTheme);
+    localStorage.setItem('spotify_manager_mode', darkMode ? 'dark' : 'light');
+    if (darkMode) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  }, [activeTheme, darkMode]);
+
+  // --- HELPER TO UPDATE FIRESTORE ---
+  const updateFirestore = async (updates, logMessage) => {
+    if (!auth.currentUser) {
+      try { await signInAnonymously(auth); } catch (e) { console.warn("Re-auth failed", e); }
+    }
+
+    try {
+      const newLog = {
+        id: Date.now(),
+        action: logMessage,
+        timestamp: new Date().toISOString()
+      };
+
+      const payload = {
+        ...updates,
+        history: [newLog, ...data.history].slice(0, 50)
+      };
+
+      await setDoc(APP_DOC_REF, payload, { merge: true });
+
+    } catch (e) {
+      console.error("Save Error:", e);
+      if (e.code === 'permission-denied') {
+        alert("Permission Denied: Please check Firestore Rules.");
+      } else {
+        alert("Failed to save changes: " + e.message);
+      }
+    }
+  };
+
+  const handleLogin = (e) => {
+    e.preventDefault();
+    if (usernameRef.current.value === 'Abhnv' && passwordRef.current.value === 'Abhinav@302007') {
+      setIsAdmin(true);
+      setShowLogin(false);
+    } else {
+      alert('Invalid credentials');
+    }
+  };
+
+  const handleLogout = () => {
+    setIsAdmin(false);
+    setIsAdminViewMode(true);
+  };
+
+  const handleMemberSave = (e) => {
+    e.preventDefault();
+    const spotifyId = extractSpotifyId(editForm.url);
+
+    let finalAvatar = editForm.avatar;
+    if (!finalAvatar) {
+      finalAvatar = `https://ui-avatars.com/api/?name=${editForm.name}&background=random&color=fff&size=128`;
+    }
+
+    const newMember = {
+      id: editingMember.id || `m_${Date.now()}`,
+      name: editForm.name,
+      spotifyUrl: editForm.url,
+      spotifyId: spotifyId,
+      avatar: finalAvatar,
+      status: editForm.status,
+      payments: editForm.payments || [],
+      slot: editingMember.slot
+    };
+
+    let updatedMembers;
+    let actionLog;
+
+    if (editingMember.id) {
+      updatedMembers = data.members.map(m => m.id === newMember.id ? newMember : m);
+      actionLog = `Updated member: ${newMember.name}`;
+    } else {
+      updatedMembers = [...data.members, newMember];
+      actionLog = `Added member: ${newMember.name}`;
+    }
+
+    updateFirestore({ members: updatedMembers }, actionLog);
+    setEditingMember(null);
+  };
+
+  const addManualPayment = () => {
+    if (!manualPayment.date || !manualPayment.amount) return;
+
+    const newEntry = {
+      date: manualPayment.date,
+      amount: manualPayment.amount,
+      timestamp: new Date().toISOString()
+    };
+
+    const newPayments = [newEntry, ...editForm.payments];
+
+    // Sort by date descending
+    newPayments.sort((a, b) => {
+      const dateA = typeof a === 'object' ? new Date(a.date) : new Date(a);
+      const dateB = typeof b === 'object' ? new Date(b.date) : new Date(b);
+      return dateB - dateA;
+    });
+
+    setEditForm({
+      ...editForm,
+      status: 'paid',
+      payments: newPayments
+    });
+
+    // Reset manual payment input slightly but keep date? No reset is better for rapid entry
+  };
+
+  const markUnpaid = () => {
+    setEditForm({ ...editForm, status: 'unpaid' });
+  }
+
+  const clearPaymentHistory = () => {
+    if (confirm("Are you sure you want to clear the entire payment history for this user?")) {
+      setEditForm({ ...editForm, payments: [] });
+    }
+  };
+
+  const handlePlanSave = (e) => {
+    e.preventDefault();
+    updateFirestore({
+      planName: planForm.name,
+      renewalDate: planForm.renewalDate,
+      monthlyAmount: Number(planForm.cost),
+      announcement: {
+        text: planForm.announcementText,
+        show: planForm.showAnnouncement
+      }
+    }, 'Plan settings updated');
+    setShowPlanSettings(false);
+  };
+
+  const deleteMember = (id) => {
+    if (confirm('Are you sure you want to remove this member?')) {
+      const memberName = data.members.find(m => m.id === id)?.name;
+      const updatedMembers = data.members.filter(m => m.id !== id);
+      updateFirestore({ members: updatedMembers }, `Removed member: ${memberName}`);
+    }
+  };
+
+  const toggleStatus = (id) => {
+    const member = data.members.find(m => m.id === id);
+    const newStatus = member.status === 'paid' ? 'unpaid' : 'paid';
+    const updatedMembers = data.members.map(m => m.id === id ? { ...m, status: newStatus } : m);
+    updateFirestore({ members: updatedMembers }, `Changed status for ${member.name} to ${newStatus}`);
+  };
+
+  const openEditModal = (member, slot) => {
+    // Init manual payment defaults
+    const today = new Date().toISOString().split('T')[0];
+    setManualPayment({ date: today, amount: data.plan.cost });
+
+    if (member) {
+      setEditingMember({ ...member, slot });
+      setEditForm({
+        name: member.name,
+        url: member.spotifyUrl,
+        status: member.status,
+        avatar: member.avatar,
+        payments: member.payments || []
+      });
+    } else {
+      setEditingMember({ slot });
+      setEditForm({ name: '', url: '', status: 'paid', avatar: '', payments: [] });
+    }
+  };
+
+  const openPlanSettings = () => {
+    setPlanForm({
+      name: data.plan.name,
+      renewalDate: data.plan.renewalDate,
+      cost: data.plan.cost,
+      announcementText: data.announcement.text,
+      showAnnouncement: data.announcement.show
+    });
+    setShowPlanSettings(true);
+  };
+
+  const getMemberInSlot = (slotNum) => data.members.find(m => m.slot === slotNum);
+
+  const daysRemaining = getDaysRemaining(data.plan.renewalDate);
+  const themeStyles = THEMES[activeTheme];
+
+  if (loading) return <div className="min-h-screen bg-black flex items-center justify-center text-white">Connecting to Dashboard...</div>;
+
+  return (
+    <div className={`min-h-screen transition-colors duration-700 font-sans selection:bg-pink-500 selection:text-white relative overflow-hidden ${darkMode ? 'bg-black text-zinc-100' : 'text-slate-800'}`}>
+
+      {/* --- ANIMATED BACKGROUND BLOBS --- */}
+      <style>{`
+        @keyframes blob {
+          0% { transform: translate(0px, 0px) scale(1); }
+          33% { transform: translate(30px, -50px) scale(1.2); }
+          66% { transform: translate(-20px, 20px) scale(0.8); }
+          100% { transform: translate(0px, 0px) scale(1); }
+        }
+        .animate-blob {
+          animation: blob 7s infinite;
+        }
+        .animation-delay-2000 {
+          animation-delay: 2s;
+        }
+        .animation-delay-4000 {
+          animation-delay: 4s;
+        }
+        .animation-delay-6000 {
+          animation-delay: 6s;
+        }
+        @keyframes snow-shake {
+           0%, 100% { transform: rotate(0deg); }
+           25% { transform: rotate(5deg); }
+           75% { transform: rotate(-5deg); }
+        }
+        .hover-shake:hover {
+           animation: snow-shake 0.5s ease-in-out;
+        }
+      `}</style>
+
+      {/* Light Mode Blobs: Pink, Blue, Yellow, Green - LIGHTER & SOFTER */}
+      {!darkMode && (
+        <div className="fixed inset-0 z-0 opacity-100 pointer-events-none">
+          <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] rounded-full bg-pink-200 blur-[80px] animate-blob mix-blend-multiply filter"></div>
+          <div className="absolute top-[10%] right-[-10%] w-[50%] h-[50%] rounded-full bg-blue-200 blur-[80px] animate-blob animation-delay-2000 mix-blend-multiply filter"></div>
+          <div className="absolute bottom-[-20%] left-[20%] w-[60%] h-[60%] rounded-full bg-yellow-200 blur-[80px] animate-blob animation-delay-4000 mix-blend-multiply filter"></div>
+          <div className="absolute bottom-[10%] right-[20%] w-[40%] h-[40%] rounded-full bg-emerald-200 blur-[80px] animate-blob animation-delay-6000 mix-blend-multiply filter"></div>
+        </div>
+      )}
+
+      {/* Dark Mode Blobs: Deep Nebula - MORE SUBTLE */}
+      {darkMode && (
+        <div className="fixed inset-0 z-0 opacity-30 pointer-events-none">
+          <div className="absolute top-[-20%] right-[-10%] w-[60%] h-[60%] rounded-full bg-indigo-900/50 blur-[150px] animate-blob"></div>
+          <div className="absolute bottom-[-10%] left-[-10%] w-[50%] h-[50%] rounded-full bg-emerald-900/50 blur-[150px] animate-blob animation-delay-4000"></div>
+          <div className="absolute top-[40%] left-[30%] w-[30%] h-[30%] rounded-full bg-purple-900/50 blur-[120px] animate-blob animation-delay-2000"></div>
+        </div>
+      )}
+
+      {/* --- NAVBAR (Floating / Minimal) --- */}
+      <nav className={`fixed top-0 w-full z-40 transition-all duration-500`}>
+        <div className="max-w-7xl mx-auto px-8 h-24 flex items-center justify-between">
+          <div className="flex items-center gap-3 opacity-90 hover:opacity-100 transition-opacity">
+            {/* OFFICIAL GREEN SPOTIFY LOGO */}
+            <div className="relative group">
+              <div className="absolute inset-0 bg-[#1DB954] blur-xl opacity-40 group-hover:opacity-60 transition-opacity rounded-full"></div>
+              <div className="relative w-12 h-12 rounded-full bg-black flex items-center justify-center text-[#1DB954] shadow-2xl shadow-black/50 ring-4 ring-white/20 dark:ring-white/10 transition-transform group-hover:scale-110">
+                <svg viewBox="0 0 24 24" className="w-7 h-7 fill-current">
+                  <path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.419 1.56-.299.421-1.02.599-1.559.3z" />
+                </svg>
+              </div>
+            </div>
+
+            <span className="font-bold text-xl tracking-tight dark:text-white">FamilyPlan</span>
+          </div>
+
+          <div className="flex items-center gap-5">
+            {/* Theme & Mode Toggles (Public) */}
+            <div className="hidden sm:flex items-center gap-4 mr-2 border-r border-gray-200 dark:border-white/10 pr-6">
+              <button onClick={() => setDarkMode(!darkMode)} className="p-2.5 rounded-full hover:bg-white/50 dark:hover:bg-zinc-800 text-gray-500 hover:text-black dark:text-zinc-400 dark:hover:text-white transition-all">
+                {darkMode ? <Sun size={20} /> : <Moon size={20} />}
+              </button>
+            </div>
+
+            {/* Auth Button - Minimal */}
+            {isAdmin ? (
+              <div className="flex items-center gap-2">
+                <div className={`hidden md:flex items-center gap-2 px-4 py-2 rounded-full border text-xs font-bold uppercase tracking-wider backdrop-blur-md shadow-lg ${isAdminViewMode ? 'bg-emerald-500/20 border-emerald-500/20 text-emerald-600 dark:text-emerald-400' : 'bg-amber-500/20 border-amber-500/20 text-amber-600 dark:text-amber-400'}`}>
+                  <span className={`w-2 h-2 rounded-full ${isAdminViewMode ? 'bg-emerald-500 animate-pulse' : 'bg-amber-500'}`}></span>
+                  {isAdminViewMode ? 'Admin' : 'Preview'}
+                </div>
+                <button
+                  onClick={() => setIsAdminViewMode(!isAdminViewMode)}
+                  className="p-3 rounded-full bg-white/20 hover:bg-white/40 backdrop-blur-md text-gray-600 dark:text-zinc-300 shadow-xl transition-all hover:scale-105"
+                >
+                  {isAdminViewMode ? <Layout size={20} /> : <Settings size={20} />}
+                </button>
+                <button onClick={handleLogout} className="p-3 rounded-full bg-rose-500/10 hover:bg-rose-500/20 backdrop-blur-md text-rose-500 shadow-xl transition-all hover:scale-105">
+                  <LogOut size={20} />
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={() => setShowLogin(true)}
+                className="px-6 py-2.5 rounded-full font-bold text-xs uppercase tracking-widest bg-black/80 text-white dark:bg-white/90 dark:text-black hover:scale-105 active:scale-95 transition-all shadow-xl backdrop-blur-md border border-transparent hover:border-white/20"
+              >
+                Log in
+              </button>
+            )}
+
+          </div>
+        </div>
+      </nav>
+
+      {/* --- ANNOUNCEMENT BANNER --- */}
+      {data.announcement?.show && (
+        <div className={`fixed top-20 left-0 right-0 z-30 flex items-center justify-center p-3 animate-in slide-in-from-top-2 duration-500 pointer-events-none`}>
+          <div className={`bg-gradient-to-r ${themeStyles.gradient} text-white px-6 py-2.5 rounded-full shadow-xl shadow-${activeTheme}-500/20 flex items-center gap-3 backdrop-blur-md border border-white/20 max-w-lg pointer-events-auto`}>
+            <Megaphone size={16} className="animate-bounce" />
+            <span className="text-xs font-bold tracking-wide">{data.announcement.text}</span>
+          </div>
+        </div>
+      )}
+
+      {/* --- MAIN CONTENT --- */}
+      <main className="relative z-10 pt-32 pb-24 px-4 sm:px-6 max-w-5xl mx-auto space-y-12">
+
+        {/* HEADER CARD */}
+        <section className={`relative overflow-hidden rounded-[3rem] p-8 md:p-12 text-white shadow-2xl shadow-${activeTheme}-500/40 bg-gradient-to-br ${themeStyles.gradient} transition-all duration-500 border border-white/20 backdrop-blur-3xl`}>
+          <div className="absolute top-0 right-0 p-48 bg-white/10 rounded-full blur-3xl -mr-24 -mt-24 pointer-events-none mix-blend-overlay"></div>
+          <div className="absolute bottom-0 left-0 p-40 bg-black/10 rounded-full blur-3xl -ml-20 -mb-20 pointer-events-none"></div>
+          <div className="absolute inset-0 bg-noise opacity-20 pointer-events-none"></div>
+
+          <div className="relative z-10 flex flex-col md:flex-row justify-between gap-10">
+            <div className="flex-1 space-y-6">
+              <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/10 backdrop-blur-md text-[10px] font-black uppercase tracking-widest border border-white/20 shadow-sm">
+                <Shield size={12} /> Spotify Premium Plan
+              </div>
+              <h1 className="text-4xl md:text-6xl font-black tracking-tight leading-none drop-shadow-sm">{data.plan.name}</h1>
+
+              <div className="flex flex-wrap gap-2.5 max-w-xl pt-2">
+                {data.plan.features.map(f => (
+                  <div key={f.id} className="flex items-center gap-2 text-xs font-bold bg-black/20 backdrop-blur-md px-4 py-2 rounded-xl border border-white/10 hover:bg-black/30 hover:scale-105 transition-all cursor-default">
+                    {f.icon === 'Zap' ? <Zap size={14} className="text-yellow-300" fill="currentColor" /> : f.icon === 'Music' ? <Music size={14} className="text-pink-300" /> : <CheckCircle2 size={14} className="text-emerald-300" />}
+                    {f.text}
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="flex flex-col gap-4 min-w-[200px]">
+              <div className="bg-white/10 backdrop-blur-xl rounded-[2rem] p-8 border border-white/20 flex flex-col justify-center items-center text-center shadow-2xl shadow-black/10">
+                <p className="text-[10px] uppercase tracking-[0.2em] opacity-80 font-bold mb-2">Renews In</p>
+                <div className="text-6xl font-black mb-1 tabular-nums tracking-tighter drop-shadow-md">{daysRemaining}</div>
+                <p className="text-xs font-semibold opacity-80">Days</p>
+              </div>
+
+              {isAdmin && isAdminViewMode && (
+                <button
+                  onClick={openPlanSettings}
+                  className="w-full py-3.5 rounded-2xl bg-black/20 hover:bg-black/30 backdrop-blur-md text-xs font-bold border border-white/10 transition-all flex items-center justify-center gap-2 hover:scale-102 active:scale-98"
+                >
+                  <Settings size={14} /> Plan Settings
+                </button>
+              )}
+            </div>
+          </div>
+        </section>
+
+        {/* ADMIN HISTORY LOG */}
+        {isAdmin && isAdminViewMode && (
+          <section className="bg-white/40 dark:bg-zinc-900/40 backdrop-blur-xl border border-white/50 dark:border-white/5 rounded-[2rem] p-8 shadow-sm">
+            <div className="flex items-center gap-3 mb-6 text-gray-500 dark:text-zinc-400 px-1">
+              <History size={18} />
+              <h2 className="text-xs font-black uppercase tracking-widest">System Log</h2>
+            </div>
+            <div className="space-y-3 max-h-40 overflow-y-auto pr-2 custom-scrollbar">
+              {data.history.map(h => (
+                <div key={h.id} className="text-xs flex justify-between items-center text-gray-600 dark:text-zinc-400 border-b border-gray-200/50 dark:border-white/5 pb-2 last:border-0">
+                  <span className="font-semibold">{h.action}</span>
+                  <span className="opacity-50 font-mono text-[10px] bg-white/50 dark:bg-black/20 px-2 py-1 rounded-md">{new Date(h.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
+
+        {/* MEMBERS GRID */}
+        <section>
+          <div className="flex items-center justify-between mb-8 px-2">
+            <h2 className="text-2xl font-black dark:text-white flex items-center gap-3 tracking-tight text-gray-800">
+              Members
+              <span className="text-sm font-bold text-gray-500 dark:text-zinc-500 bg-white/50 dark:bg-zinc-800/50 px-3 py-1 rounded-full border border-black/5 dark:border-white/10 backdrop-blur-sm">
+                {data.members.length} / 3
+              </span>
+            </h2>
+            {/* Payment Alert */}
+            {daysRemaining < 3 && (
+              <div className="flex items-center gap-2 text-rose-500 text-sm font-bold bg-rose-50 px-4 py-2 rounded-full border border-rose-100 shadow-sm animate-pulse">
+                <AlertCircle size={16} /> Payment Due
+              </div>
+            )}
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            {[1, 2, 3].map(slot => (
+              <MemberCard
+                key={slot}
+                slot={slot}
+                theme={activeTheme}
+                member={getMemberInSlot(slot)}
+                isAdmin={isAdmin && isAdminViewMode}
+                isBlurred={!isAdmin}
+                onDelete={deleteMember}
+                onEdit={openEditModal}
+                onToggleStatus={toggleStatus}
+                onViewHistory={setHistoryMember}
+              />
+            ))}
+          </div>
+        </section>
+
+      </main>
+
+      {/* --- FOOTER --- */}
+      {/* --- FOOTER --- */}
+      <footer className="py-12 mt-20 text-center opacity-70 hover:opacity-100 transition-opacity">
+        <div className="max-w-4xl mx-auto px-6">
+          <div className="flex justify-center mb-6">
+            <a
+              href="https://www.linkedin.com/in/abhnv07/"
+              target="_blank"
+              rel="noreferrer"
+              className={`p-4 rounded-2xl bg-white/80 dark:bg-zinc-900 text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 shadow-sm border border-white/50 dark:border-zinc-800`}
+            >
+              <svg className="w-5 h-5 fill-current" viewBox="0 0 24 24"><path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z" /></svg>
+            </a>
+          </div>
+          <p className="text-sm font-bold text-gray-900 dark:text-white mb-2 flex items-center justify-center gap-2">
+            Made by Abhinav <Sparkles size={12} className="text-yellow-500" fill="currentColor" />
+          </p>
+          <p className="text-xs text-gray-500 dark:text-zinc-500 max-w-sm mx-auto leading-relaxed">
+            This is a personal dashboard. Not an official product.
+          </p>
+        </div>
+      </footer>
+
+      {/* --- MODALS --- */}
+
+      {/* Login Modal */}
+      <Modal isOpen={showLogin} onClose={() => setShowLogin(false)} title="Admin Access">
+        <form onSubmit={handleLogin} className="space-y-6">
+          <div>
+            <label className="block text-xs font-bold uppercase text-gray-400 dark:text-zinc-500 mb-2 tracking-wider">Username</label>
+            <input
+              ref={usernameRef}
+              type="text"
+              className={`w-full bg-gray-50 dark:bg-zinc-800/50 border border-gray-200 dark:border-zinc-700 rounded-xl p-4 text-gray-900 dark:text-white focus:outline-none focus:ring-2 ${themeStyles.ring} transition-all`}
+              placeholder="Enter username"
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-bold uppercase text-gray-400 dark:text-zinc-500 mb-2 tracking-wider">Password</label>
+            <input
+              ref={passwordRef}
+              type="password"
+              className={`w-full bg-gray-50 dark:bg-zinc-800/50 border border-gray-200 dark:border-zinc-700 rounded-xl p-4 text-gray-900 dark:text-white focus:outline-none focus:ring-2 ${themeStyles.ring} transition-all`}
+              placeholder="••••••••"
+            />
+          </div>
+          <button type="submit" className={`w-full py-4 rounded-xl text-white font-bold text-sm uppercase tracking-widest shadow-xl shadow-${activeTheme}-500/20 ${themeStyles.primary} ${themeStyles.primaryHover} transition-all active:scale-95`}>
+            Unlock Dashboard
+          </button>
+        </form>
+      </Modal>
+
+      {/* Plan Settings Modal */}
+      <Modal isOpen={showPlanSettings} onClose={() => setShowPlanSettings(false)} title="Plan Settings">
+        <form onSubmit={handlePlanSave} className="space-y-6">
+          <div>
+            <label className="block text-xs font-bold uppercase text-gray-400 dark:text-zinc-500 mb-2 tracking-wider">Plan Name</label>
+            <input
+              value={planForm.name}
+              onChange={(e) => setPlanForm({ ...planForm, name: e.target.value })}
+              required
+              className={`w-full bg-gray-50 dark:bg-zinc-800/50 border border-gray-200 dark:border-zinc-700 rounded-xl p-4 text-gray-900 dark:text-white focus:outline-none focus:ring-2 ${themeStyles.ring} transition-all`}
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-bold uppercase text-gray-400 dark:text-zinc-500 mb-2 tracking-wider">Monthly Amount</label>
+            <input
+              type="number"
+              value={planForm.cost}
+              onChange={(e) => setPlanForm({ ...planForm, cost: e.target.value })}
+              required
+              className={`w-full bg-gray-50 dark:bg-zinc-800/50 border border-gray-200 dark:border-zinc-700 rounded-xl p-4 text-gray-900 dark:text-white focus:outline-none focus:ring-2 ${themeStyles.ring} transition-all`}
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-bold uppercase text-gray-400 dark:text-zinc-500 mb-2 tracking-wider">Next Renewal Date</label>
+            <input
+              type="date"
+              value={planForm.renewalDate}
+              onChange={(e) => setPlanForm({ ...planForm, renewalDate: e.target.value })}
+              required
+              className={`w-full bg-gray-50 dark:bg-zinc-800/50 border border-gray-200 dark:border-zinc-700 rounded-xl p-4 text-gray-900 dark:text-white focus:outline-none focus:ring-2 ${themeStyles.ring} transition-all [color-scheme:light] dark:[color-scheme:dark]`}
+            />
+          </div>
+
+          <div className="pt-4 border-t border-gray-100 dark:border-zinc-800">
+            <h4 className="text-sm font-bold dark:text-white mb-4">Announcement Banner</h4>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-xs font-bold uppercase text-gray-400 dark:text-zinc-500 mb-2 tracking-wider">Banner Message</label>
+                <input
+                  value={planForm.announcementText}
+                  onChange={(e) => setPlanForm({ ...planForm, announcementText: e.target.value })}
+                  className={`w-full bg-gray-50 dark:bg-zinc-800/50 border border-gray-200 dark:border-zinc-700 rounded-xl p-4 text-gray-900 dark:text-white focus:outline-none focus:ring-2 ${themeStyles.ring} transition-all`}
+                  placeholder="e.g. Price increasing next month!"
+                />
+              </div>
+              <div className="flex items-center gap-3">
+                <button
+                  type="button"
+                  onClick={() => setPlanForm({ ...planForm, showAnnouncement: !planForm.showAnnouncement })}
+                  className={`relative w-12 h-6 rounded-full transition-colors ${planForm.showAnnouncement ? 'bg-emerald-500' : 'bg-gray-300 dark:bg-zinc-700'}`}
+                >
+                  <div className={`absolute top-1 left-1 w-4 h-4 bg-white rounded-full transition-transform ${planForm.showAnnouncement ? 'translate-x-6' : ''}`} />
+                </button>
+                <span className="text-sm font-medium text-gray-600 dark:text-zinc-400">Show Banner on Site</span>
+              </div>
+            </div>
+          </div>
+
+          <button type="submit" className={`w-full py-4 rounded-xl text-white font-bold text-sm uppercase tracking-widest shadow-lg ${themeStyles.primary} ${themeStyles.primaryHover} transition-all active:scale-95 mt-2`}>
+            Save Settings
+          </button>
+        </form>
+      </Modal>
+
+      {/* Edit Member Modal */}
+      <Modal isOpen={!!editingMember} onClose={() => setEditingMember(null)} title={editingMember?.id ? "Edit Member" : "Add Member"}>
+        <form onSubmit={handleMemberSave} className="space-y-6">
+          <div>
+            <label className="block text-xs font-bold uppercase text-gray-400 dark:text-zinc-500 mb-2 tracking-wider">Name</label>
+            <input
+              value={editForm.name}
+              onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
+              required
+              className={`w-full bg-gray-50 dark:bg-zinc-800/50 border border-gray-200 dark:border-zinc-700 rounded-xl p-4 text-gray-900 dark:text-white focus:outline-none focus:ring-2 ${themeStyles.ring} transition-all`}
+              placeholder="e.g. John Doe"
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-bold uppercase text-gray-400 dark:text-zinc-500 mb-2 tracking-wider">Spotify Profile Link</label>
+            <input
+              value={editForm.url}
+              onChange={(e) => setEditForm({ ...editForm, url: e.target.value })}
+              required
+              className={`w-full bg-gray-50 dark:bg-zinc-800/50 border border-gray-200 dark:border-zinc-700 rounded-xl p-4 text-gray-900 dark:text-white focus:outline-none focus:ring-2 ${themeStyles.ring} transition-all`}
+              placeholder="https://open.spotify.com/user/..."
+            />
+            <p className="text-[10px] text-gray-400 mt-1">ID will be extracted automatically.</p>
+          </div>
+          <div>
+            <label className="block text-xs font-bold uppercase text-gray-400 dark:text-zinc-500 mb-2 tracking-wider">Avatar Image URL (Optional)</label>
+            <input
+              value={editForm.avatar}
+              onChange={(e) => setEditForm({ ...editForm, avatar: e.target.value })}
+              className={`w-full bg-gray-50 dark:bg-zinc-800/50 border border-gray-200 dark:border-zinc-700 rounded-xl p-4 text-gray-900 dark:text-white focus:outline-none focus:ring-2 ${themeStyles.ring} transition-all`}
+              placeholder="https://i.scdn.co/image/..."
+            />
+          </div>
+
+          <div className="pt-2 border-t border-gray-100 dark:border-zinc-800">
+            <label className="block text-xs font-bold uppercase text-gray-400 dark:text-zinc-500 mb-3 tracking-wider">Payment History</label>
+
+            <div className="bg-gray-50 dark:bg-zinc-800/50 rounded-xl p-4 mb-4 border border-gray-100 dark:border-zinc-700 max-h-32 overflow-y-auto">
+              {editForm.payments && editForm.payments.length > 0 ? (
+                editForm.payments.map((entry, i) => {
+                  const isObj = typeof entry === 'object';
+                  const dateStr = isObj ? entry.date : entry;
+                  const amt = isObj ? entry.amount : null;
+
+                  return (
+                    <div key={i} className="flex justify-between items-center text-xs py-1 border-b border-gray-200 dark:border-zinc-700 last:border-0">
+                      <span className="font-mono text-gray-500 dark:text-zinc-400">{new Date(dateStr).toLocaleDateString()}</span>
+                      <span className="text-emerald-500 font-bold flex items-center gap-1">
+                        {amt && <span>{data.plan.currency}{amt}</span>}
+                        <CheckCircle2 size={10} />
+                      </span>
+                    </div>
+                  );
+                })
+              ) : (
+                <p className="text-xs text-center text-gray-400 italic">No payment history recorded.</p>
+              )}
+            </div>
+
+            <div className="space-y-3">
+              <div className="flex gap-2">
+                <input
+                  type="date"
+                  value={manualPayment.date}
+                  onChange={(e) => setManualPayment({ ...manualPayment, date: e.target.value })}
+                  className={`flex-1 bg-white dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 rounded-xl px-3 py-2 text-xs font-medium dark:text-white [color-scheme:light] dark:[color-scheme:dark]`}
+                />
+                <input
+                  type="number"
+                  value={manualPayment.amount}
+                  onChange={(e) => setManualPayment({ ...manualPayment, amount: e.target.value })}
+                  className={`w-20 bg-white dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 rounded-xl px-3 py-2 text-xs font-medium dark:text-white`}
+                  placeholder="Amt"
+                />
+                <button
+                  type="button"
+                  onClick={addManualPayment}
+                  className={`px-4 py-2 rounded-xl font-bold bg-emerald-500 text-white shadow-lg shadow-emerald-500/20 hover:scale-105 active:scale-95 transition-all text-xs flex items-center gap-1`}
+                >
+                  <Plus size={14} /> Add
+                </button>
+              </div>
+
+              <div className="flex gap-2 mt-4">
+                <button
+                  type="button"
+                  onClick={markUnpaid}
+                  className={`flex-1 py-2.5 rounded-xl font-bold transition-all border-2 border-dashed border-gray-300 dark:border-zinc-700 text-gray-500 dark:text-zinc-500 hover:border-rose-500 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/10 flex items-center justify-center gap-2 text-xs`}
+                >
+                  <X size={14} /> Mark Unpaid
+                </button>
+                <button
+                  type="button"
+                  onClick={clearPaymentHistory}
+                  className={`flex-1 py-2.5 rounded-xl font-bold transition-all border-2 border-dashed border-gray-300 dark:border-zinc-700 text-gray-500 dark:text-zinc-500 hover:border-rose-500 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/10 flex items-center justify-center gap-2 text-xs`}
+                >
+                  <Trash2 size={14} /> Clear History
+                </button>
+              </div>
+            </div>
+
+            <p className="text-[10px] text-center mt-3 text-gray-400">
+              Current Status: <span className={`font-bold ${editForm.status === 'paid' ? 'text-emerald-500' : 'text-rose-500'}`}>{editForm.status.toUpperCase()}</span>
+            </p>
+          </div>
+
+          <button type="submit" className={`w-full py-4 rounded-xl text-white font-bold text-sm uppercase tracking-widest shadow-lg ${themeStyles.primary} ${themeStyles.primaryHover} transition-all active:scale-95`}>
+            Save Changes
+          </button>
+        </form>
+      </Modal>
+
+      {/* History Modal */}
+      <Modal isOpen={!!historyMember} onClose={() => setHistoryMember(null)} title="Payment History">
+        <div className="space-y-4">
+          <h4 className="text-sm font-bold text-gray-500 mb-4">History for {historyMember?.name}</h4>
+          {historyMember?.payments?.length > 0 ? (
+            <div className="space-y-0">
+              {historyMember.payments.map((p, i) => (
+                <div key={i} className="flex justify-between items-center text-sm border-b border-gray-100 dark:border-white/5 py-3 last:border-0 hover:bg-gray-50 dark:hover:bg-white/5 px-2 rounded-lg transition-colors">
+                  <span className="text-gray-600 dark:text-gray-400 font-medium">{formatDate(p.date || p)}</span>
+                  <span className="font-bold text-gray-900 dark:text-white flex items-center gap-1">
+                    <span className="text-xs text-gray-400 font-normal">INR</span> {p.amount || '-'}
+                  </span>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="py-10 text-center text-gray-400 flex flex-col items-center gap-2">
+              <Clock size={32} className="opacity-20" />
+              <p>No payment history found.</p>
+            </div>
+          )}
+        </div>
+      </Modal>
+
+    </div>
+  );
+}
+
+const root = createRoot(document.getElementById('root'));
+root.render(<SpotifyManager />);
