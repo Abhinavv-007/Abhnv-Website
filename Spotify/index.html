@@ -53,7 +53,7 @@
       Trash2, Edit2, Check, X, Copy, ExternalLink, Shield,
       Music, Radio, Mic2, Disc, Lock, User, Layout, Sun, Moon,
       History, AlertCircle, CheckCircle2, Zap, MoreHorizontal,
-      Sparkles, Megaphone, Clock, MapPin
+      Sparkles, Megaphone, Clock, MapPin, Link as LinkIcon
     } from 'lucide-react';
 
     // FIREBASE IMPORTS
@@ -155,7 +155,8 @@
       history: [
         { id: 1, action: 'System initialized', timestamp: new Date().toISOString() }
       ],
-      address: ''
+      address: '',
+      familyJoinLink: ''
     };
 
     const getDaysRemaining = (dateString) => {
@@ -365,9 +366,11 @@
       // New state for manual payment entry
       const [manualPayment, setManualPayment] = useState({ date: '', amount: '' });
 
-      // Address State
+      // Address & Link State
       const [isEditingAddress, setIsEditingAddress] = useState(false);
       const [addressForm, setAddressForm] = useState('');
+      const [isEditingLink, setIsEditingLink] = useState(false);
+      const [linkForm, setLinkForm] = useState('');
 
       const usernameRef = useRef();
       const passwordRef = useRef();
@@ -399,7 +402,8 @@
                   announcement: serverData.announcement || { text: '', show: false },
                   members: serverData.members || [],
                   history: serverData.history || [],
-                  address: serverData.address || ''
+                  address: serverData.address || '',
+                  familyJoinLink: serverData.familyJoinLink || ''
                 };
                 setData(mappedData);
               } else {
@@ -599,9 +603,26 @@
         setIsEditingAddress(false);
       };
 
+      const handleLinkSave = () => {
+        updateFirestore({ familyJoinLink: linkForm }, 'Join Link updated');
+        setIsEditingLink(false);
+      };
+
       const startEditingAddress = () => {
         setAddressForm(data.address);
         setIsEditingAddress(true);
+      };
+
+      const startEditingLink = () => {
+        setLinkForm(data.familyJoinLink);
+        setIsEditingLink(true);
+      };
+
+      const copyToClipboard = (text) => {
+        if (text) {
+          navigator.clipboard.writeText(text);
+          alert("Copied to clipboard!");
+        }
       };
 
       const deleteMember = (id) => {
@@ -837,51 +858,137 @@
               </section>
             )}
 
-            {/* ADDRESS SECTION */}
-            <section className="bg-white/40 dark:bg-zinc-900/40 backdrop-blur-xl border border-white/50 dark:border-white/5 rounded-[2rem] p-8 shadow-sm">
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-3 text-gray-500 dark:text-zinc-400">
-                  <MapPin size={18} />
-                  <h2 className="text-xs font-black uppercase tracking-widest">Address</h2>
+            {/* INFO CARDS SECTION (Address + Join Link) */}
+            <section className="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+              {/* PLAN ADDRESS CARD */}
+              <div className="bg-white/85 dark:bg-zinc-900/85 backdrop-blur-xl border border-white/50 dark:border-white/10 rounded-[2rem] p-8 shadow-sm flex flex-col justify-between min-h-[180px]">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-3 text-gray-800 dark:text-zinc-200">
+                    <MapPin size={18} />
+                    <h2 className="text-xs font-black uppercase tracking-widest opacity-70">Plan Address</h2>
+                  </div>
+                  {isAdmin && isAdminViewMode && !isEditingAddress && (
+                    <button
+                      onClick={startEditingAddress}
+                      className="p-2 rounded-full hover:bg-black/5 dark:hover:bg-white/10 text-gray-500 transition-colors"
+                      title="Edit Address"
+                    >
+                      <Edit2 size={14} />
+                    </button>
+                  )}
                 </div>
-                {isAdmin && isAdminViewMode && !isEditingAddress && (
-                  <button
-                    onClick={startEditingAddress}
-                    className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-zinc-800 text-gray-400 hover:text-blue-500 transition-colors"
-                  >
-                    <Edit2 size={14} />
-                  </button>
+
+                {isEditingAddress ? (
+                  <div className="space-y-4">
+                    <textarea
+                      value={addressForm}
+                      onChange={(e) => setAddressForm(e.target.value)}
+                      className="w-full bg-black/5 dark:bg-black/50 border border-gray-200 dark:border-zinc-700 rounded-xl p-3 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-green-500 transition-all min-h-[80px]"
+                      placeholder="Enter full address..."
+                    ></textarea>
+                    <div className="flex gap-2 justify-end">
+                      <button
+                        onClick={() => setIsEditingAddress(false)}
+                        className="px-3 py-1.5 rounded-lg text-[10px] font-bold text-gray-500 hover:bg-black/5 dark:hover:bg-white/10 transition-colors"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        onClick={handleAddressSave}
+                        className="px-3 py-1.5 rounded-lg text-[10px] font-bold bg-green-500 text-white hover:bg-green-600 shadow-md transition-all"
+                      >
+                        Save
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="group relative">
+                    <p className="text-sm font-semibold text-gray-700 dark:text-zinc-300 leading-relaxed whitespace-pre-line break-words">
+                      {data.address || "No address set"}
+                    </p>
+                    <div className="mt-4 flex">
+                      <button
+                        onClick={() => copyToClipboard(data.address)}
+                        className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-wider text-gray-400 hover:text-green-600 transition-colors bg-black/5 dark:bg-white/5 px-3 py-1.5 rounded-lg hover:bg-green-50 dark:hover:bg-green-900/30"
+                      >
+                        <Copy size={12} /> Copy Address
+                      </button>
+                    </div>
+                  </div>
                 )}
               </div>
 
-              {isEditingAddress ? (
-                <div className="space-y-4">
-                  <textarea
-                    value={addressForm}
-                    onChange={(e) => setAddressForm(e.target.value)}
-                    className="w-full bg-gray-50 dark:bg-zinc-800/50 border border-gray-200 dark:border-zinc-700 rounded-xl p-4 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-green-500 transition-all min-h-[100px]"
-                    placeholder="Enter full address..."
-                  ></textarea>
-                  <div className="flex gap-2 justify-end">
-                    <button
-                      onClick={() => setIsEditingAddress(false)}
-                      className="px-4 py-2 rounded-lg text-xs font-bold text-gray-500 hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors"
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      onClick={handleAddressSave}
-                      className="px-4 py-2 rounded-lg text-xs font-bold bg-green-500 text-white hover:bg-green-600 shadow-lg shadow-green-500/20 transition-all"
-                    >
-                      Save Changes
-                    </button>
+              {/* FAMILY JOIN LINK CARD */}
+              <div className="bg-white/85 dark:bg-zinc-900/85 backdrop-blur-xl border border-white/50 dark:border-white/10 rounded-[2rem] p-8 shadow-sm flex flex-col justify-between min-h-[180px]">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-3 text-gray-800 dark:text-zinc-200">
+                    <LinkIcon size={18} />
+                    <h2 className="text-xs font-black uppercase tracking-widest opacity-70">Join Link</h2>
                   </div>
+                  {isAdmin && isAdminViewMode && !isEditingLink && (
+                    <button
+                      onClick={startEditingLink}
+                      className="p-2 rounded-full hover:bg-black/5 dark:hover:bg-white/10 text-gray-500 transition-colors"
+                      title="Edit Link"
+                    >
+                      <Edit2 size={14} />
+                    </button>
+                  )}
                 </div>
-              ) : (
-                <p className="text-sm font-medium text-gray-600 dark:text-zinc-300 leading-relaxed whitespace-pre-line">
-                  {data.address || "No address set. Please contact the admin."}
-                </p>
-              )}
+
+                {isEditingLink ? (
+                  <div className="space-y-4">
+                    <textarea
+                      value={linkForm}
+                      onChange={(e) => setLinkForm(e.target.value)}
+                      className="w-full bg-black/5 dark:bg-black/50 border border-gray-200 dark:border-zinc-700 rounded-xl p-3 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all min-h-[80px]"
+                      placeholder="Paste Spotify Invite Link..."
+                    ></textarea>
+                    <div className="flex gap-2 justify-end">
+                      <button
+                        onClick={() => setIsEditingLink(false)}
+                        className="px-3 py-1.5 rounded-lg text-[10px] font-bold text-gray-500 hover:bg-black/5 dark:hover:bg-white/10 transition-colors"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        onClick={handleLinkSave}
+                        className="px-3 py-1.5 rounded-lg text-[10px] font-bold bg-blue-500 text-white hover:bg-blue-600 shadow-md transition-all"
+                      >
+                        Save
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div>
+                    {data.familyJoinLink ? (
+                      <a
+                        href={data.familyJoinLink}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="inline-flex items-center gap-2 text-sm font-bold text-blue-600 dark:text-blue-400 hover:underline break-all leading-relaxed"
+                      >
+                        {data.familyJoinLink}
+                        <ExternalLink size={12} />
+                      </a>
+                    ) : (
+                      <p className="text-sm font-medium text-gray-500 dark:text-zinc-500 italic">
+                        No link provided
+                      </p>
+                    )}
+                    <div className="mt-4 flex">
+                      <button
+                        onClick={() => copyToClipboard(data.familyJoinLink)}
+                        className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-wider text-gray-400 hover:text-blue-600 transition-colors bg-black/5 dark:bg-white/5 px-3 py-1.5 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/30"
+                      >
+                        <Copy size={12} /> Copy Link
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+
             </section>
 
             {/* MEMBERS GRID */}
