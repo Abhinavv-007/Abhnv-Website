@@ -53,12 +53,12 @@
       Trash2, Edit2, Check, X, Copy, ExternalLink, Shield,
       Music, Radio, Mic2, Disc, Lock, User, Layout, Sun, Moon,
       History, AlertCircle, CheckCircle2, Zap, MoreHorizontal,
-      Sparkles, Megaphone, Clock
+      Sparkles, Megaphone, Clock, MapPin
     } from 'lucide-react';
 
     // FIREBASE IMPORTS
     import { initializeApp } from "firebase/app";
-    import { getAuth, signInAnonymously, onAuthStateChanged } from "firebase/auth";
+    import { getAuth, signInAnonymously, onAuthStateChanged, signInWithEmailAndPassword, signOut } from "firebase/auth";
     import { getFirestore, doc, onSnapshot, setDoc, updateDoc } from "firebase/firestore";
 
     /**
@@ -154,7 +154,8 @@
       members: [],
       history: [
         { id: 1, action: 'System initialized', timestamp: new Date().toISOString() }
-      ]
+      ],
+      address: ''
     };
 
     const getDaysRemaining = (dateString) => {
@@ -364,6 +365,10 @@
       // New state for manual payment entry
       const [manualPayment, setManualPayment] = useState({ date: '', amount: '' });
 
+      // Address State
+      const [isEditingAddress, setIsEditingAddress] = useState(false);
+      const [addressForm, setAddressForm] = useState('');
+
       const usernameRef = useRef();
       const passwordRef = useRef();
 
@@ -393,7 +398,8 @@
                   },
                   announcement: serverData.announcement || { text: '', show: false },
                   members: serverData.members || [],
-                  history: serverData.history || []
+                  history: serverData.history || [],
+                  address: serverData.address || ''
                 };
                 setData(mappedData);
               } else {
@@ -480,19 +486,26 @@
         }
       };
 
-      const handleLogin = (e) => {
+      const handleLogin = async (e) => {
         e.preventDefault();
-        if (usernameRef.current.value === 'Abhnv' && passwordRef.current.value === 'Abhinav@302007') {
+        const email = usernameRef.current.value.trim();
+        const password = passwordRef.current.value.trim();
+
+        try {
+          await signInWithEmailAndPassword(auth, email, password);
           setIsAdmin(true);
           setShowLogin(false);
-        } else {
-          alert('Invalid credentials');
+        } catch (err) {
+          alert("Invalid login credentials");
+          console.error("Login error:", err.message);
         }
       };
 
-      const handleLogout = () => {
+      const handleLogout = async () => {
+        await signOut(auth);
         setIsAdmin(false);
         setIsAdminViewMode(true);
+        setShowLogin(true);
       };
 
       const handleMemberSave = (e) => {
@@ -579,6 +592,16 @@
           }
         }, 'Plan settings updated');
         setShowPlanSettings(false);
+      };
+
+      const handleAddressSave = () => {
+        updateFirestore({ address: addressForm }, 'Address updated');
+        setIsEditingAddress(false);
+      };
+
+      const startEditingAddress = () => {
+        setAddressForm(data.address);
+        setIsEditingAddress(true);
       };
 
       const deleteMember = (id) => {
@@ -813,6 +836,53 @@
                 </div>
               </section>
             )}
+
+            {/* ADDRESS SECTION */}
+            <section className="bg-white/40 dark:bg-zinc-900/40 backdrop-blur-xl border border-white/50 dark:border-white/5 rounded-[2rem] p-8 shadow-sm">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-3 text-gray-500 dark:text-zinc-400">
+                  <MapPin size={18} />
+                  <h2 className="text-xs font-black uppercase tracking-widest">Address</h2>
+                </div>
+                {isAdmin && isAdminViewMode && !isEditingAddress && (
+                  <button
+                    onClick={startEditingAddress}
+                    className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-zinc-800 text-gray-400 hover:text-blue-500 transition-colors"
+                  >
+                    <Edit2 size={14} />
+                  </button>
+                )}
+              </div>
+
+              {isEditingAddress ? (
+                <div className="space-y-4">
+                  <textarea
+                    value={addressForm}
+                    onChange={(e) => setAddressForm(e.target.value)}
+                    className="w-full bg-gray-50 dark:bg-zinc-800/50 border border-gray-200 dark:border-zinc-700 rounded-xl p-4 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-green-500 transition-all min-h-[100px]"
+                    placeholder="Enter full address..."
+                  ></textarea>
+                  <div className="flex gap-2 justify-end">
+                    <button
+                      onClick={() => setIsEditingAddress(false)}
+                      className="px-4 py-2 rounded-lg text-xs font-bold text-gray-500 hover:bg-gray-100 dark:hover:bg-zinc-800 transition-colors"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={handleAddressSave}
+                      className="px-4 py-2 rounded-lg text-xs font-bold bg-green-500 text-white hover:bg-green-600 shadow-lg shadow-green-500/20 transition-all"
+                    >
+                      Save Changes
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <p className="text-sm font-medium text-gray-600 dark:text-zinc-300 leading-relaxed whitespace-pre-line">
+                  {data.address || "No address set. Please contact the admin."}
+                </p>
+              )}
+            </section>
 
             {/* MEMBERS GRID */}
             <section>
