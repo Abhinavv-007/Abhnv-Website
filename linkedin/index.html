@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Monolithic Matte Obsidian UI</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            /* Light Theme Variables */
+            --obsidian-base: #f3f2ef;
+            --obsidian-surface: #ffffff;
+            --obsidian-highlight: #f0f0f0;
+            --accent-blue: #0a66c2;
+            --accent-blue-soft: rgba(10, 102, 194, 0.1);
+            --text-primary: #191919;
+            --text-secondary: #666666;
+            --border-subtle: rgba(0, 0, 0, 0.12);
+            --glass-shine: linear-gradient(135deg, rgba(255,255,255,0.8) 0%, rgba(255,255,255,0) 50%);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        body {
+            background-color: var(--obsidian-base);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            font-family: 'Inter', sans-serif;
+            color: var(--text-primary);
+            overflow-x: hidden;
+            padding: 20px; /* Added padding to prevent card from touching edges on mobile */
+        }
+
+        /* The Monolith Container */
+        .post-card {
+            width: 100%;
+            max-width: 580px;
+            background: var(--obsidian-surface);
+            border: 1px solid var(--border-subtle);
+            border-radius: 12px; /* Smoother, more modern corners */
+            position: relative;
+            overflow: hidden;
+            box-shadow: 
+                0 0 0 1px rgba(0, 0, 0, 0.04),
+                0 6px 16px rgba(0, 0, 0, 0.08);
+            transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.4s ease;
+        }
+
+        .post-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 
+                0 0 0 1px rgba(0, 0, 0, 0.04),
+                0 12px 32px rgba(0, 0, 0, 0.12);
+            border-color: rgba(0, 0, 0, 0.1);
+        }
+
+        /* Grainy Matte Overlay */
+        .post-card::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3BaseFilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/baseFilter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+            opacity: 0.05; /* Increased slightly for visibility on white */
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        /* Header Section */
+        .header {
+            padding: 16px 20px; /* Refined spacing */
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+        }
+
+        .user-meta {
+            display: flex;
+            gap: 12px;
+            flex: 1; /* Allow meta to take available space */
+            min-width: 0; /* Enable truncation for flex children */
+            align-items: center;
+        }
+
+        .avatar-container {
+            position: relative;
+            width: 52px; /* Slightly larger avatar */
+            height: 52px;
+            flex-shrink: 0; /* Prevent avatar from squishing */
+            border-radius: 50%;
+            overflow: hidden;
+            background: var(--obsidian-highlight);
+            border: 1px solid rgba(0,0,0,0.05);
+        }
+
+        .avatar-container img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            filter: grayscale(0.2);
+        }
+
+        .identity {
+            min-width: 0; /* Allow text truncation */
+        }
+
+        .identity h1 {
+            font-size: 16px; /* Slightly larger name */
+            font-weight: 600;
+            color: var(--text-primary);
+            letter-spacing: -0.01em;
+            margin-bottom: 2px;
+            margin-top: 8px; /* Added 8px top margin */
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .identity p {
+            font-size: 13px; /* More readable tagline */
+            color: var(--text-secondary);
+            line-height: 1.4;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .identity span {
+            font-size: 12px;
+            color: var(--text-secondary);
+            opacity: 0.8;
+            margin-top: 2px;
+            display: block;
+        }
+
+        .brand-logo {
+            width: 110px; /* Increased to 110px */
+            height: 110px; /* Increased to 110px */
+            object-fit: contain;
+            opacity: 0.9;
+            flex-shrink: 0;
+            margin-left: 12px;
+            margin-top: -20px; /* Negative margin to pull it up in line with name */
+        }
+
+        /* Content Section */
+        .content {
+            padding: 4px 20px 16px; /* Adjusted padding */
+        }
+
+        .body-text {
+            font-size: 15px; /* Better readability */
+            line-height: 1.5;
+            color: var(--text-primary);
+            font-weight: 400;
+            overflow-wrap: break-word;
+        }
+
+        .highlight-text {
+            display: block;
+            margin: 16px 0;
+            padding-left: 12px;
+            border-left: 3px solid var(--accent-blue);
+            font-weight: 500;
+            color: var(--text-primary);
+            background: linear-gradient(90deg, rgba(10, 102, 194, 0.05) 0%, transparent 100%);
+            padding: 8px 12px;
+            border-radius: 0 4px 4px 0;
+        }
+
+        .list-items {
+            list-style: none;
+            margin: 16px 0;
+            padding-left: 4px;
+        }
+
+        .list-items li {
+            position: relative;
+            margin-bottom: 8px;
+            font-size: 15px;
+            padding-left: 24px;
+        }
+
+        .list-items li::before {
+            content: "→";
+            position: absolute;
+            left: 0;
+            color: var(--accent-blue);
+            font-weight: bold;
+            font-size: 14px;
+            top: 1px;
+        }
+
+        .cta-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            margin-top: 20px;
+            color: var(--accent-blue);
+            text-decoration: none;
+            font-family: 'Inter', sans-serif;
+            font-weight: 600;
+            font-size: 14px;
+            padding: 8px 16px;
+            background: var(--accent-blue-soft);
+            border-radius: 20px; /* Pill shape */
+            transition: all 0.2s ease;
+            width: fit-content;
+        }
+
+        .cta-link:hover {
+            background: rgba(10, 102, 194, 0.15);
+            text-decoration: none;
+            transform: translateX(4px);
+        }
+
+        .cta-link::after {
+            content: "↗";
+            font-size: 16px;
+        }
+
+        /* Media Section */
+        .media-container {
+            width: 100%;
+            aspect-ratio: 16 / 9;
+            background: #000;
+            position: relative;
+            border-top: 1px solid var(--border-subtle);
+            border-bottom: 1px solid var(--border-subtle);
+            cursor: pointer;
+            overflow: hidden;
+        }
+
+        .media-container img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            opacity: 0.6;
+            transition: transform 0.8s ease, opacity 0.4s ease;
+        }
+
+        .media-container:hover img {
+            transform: scale(1.02);
+            opacity: 0.8;
+        }
+
+        .play-button {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 64px;
+            height: 64px;
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 5;
+            transition: all 0.3s ease;
+        }
+
+        .play-button svg {
+            width: 20px;
+            height: 20px;
+            fill: white;
+            margin-left: 4px;
+        }
+
+        .media-container:hover .play-button {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: rgba(255, 255, 255, 0.3);
+            transform: translate(-50%, -50%) scale(1.1);
+        }
+
+        /* Footer Section */
+        .footer {
+            padding: 12px 16px;
+        }
+
+        .engagement-stats {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px;
+            border-bottom: 1px solid var(--border-subtle);
+            margin-bottom: 4px;
+        }
+
+        .reactions {
+            display: flex;
+            align-items: center;
+            gap: -4px;
+        }
+
+        .reaction-icon {
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            border: 2px solid var(--obsidian-surface);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 11px;
+            box-sizing: content-box;
+        }
+
+        .count-text {
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-left: 8px;
+        }
+
+        .action-bar {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 4px;
+        }
+
+        .action-btn {
+            background: transparent;
+            border: none;
+            color: var(--text-secondary);
+            font-size: 14px; /* Slightly larger */
+            font-weight: 600; /* Bolder text */
+            padding: 12px 8px;
+            border-radius: 6px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            transition: all 0.2s ease;
+            -webkit-tap-highlight-color: transparent; /* Remove tap highlight on mobile */
+        }
+
+        .action-btn:hover {
+            background: rgba(0, 0, 0, 0.06);
+            color: var(--text-primary);
+        }
+
+        .action-btn svg {
+            width: 20px; /* Larger icons */
+            height: 20px;
+            stroke: currentColor;
+            stroke-width: 1.8;
+            fill: none;
+        }
+
+        /* Entry Animation */
+        @keyframes reveal {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .post-card {
+            animation: reveal 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+
+        /* Mobile Responsive Adjustments */
+        @media (max-width: 480px) {
+            body {
+                padding: 12px; /* Reduce body padding on small screens */
+            }
+
+            .header {
+                padding: 16px 16px 12px; /* Tighter spacing */
+            }
+
+            .content {
+                padding: 0 16px 20px;
+            }
+
+            .user-meta {
+                gap: 10px;
+            }
+
+            .avatar-container {
+                width: 40px;
+                height: 40px;
+            }
+
+            .identity h1 {
+                font-size: 14px;
+            }
+            
+            .identity p {
+                font-size: 11px;
+            }
+
+            .body-text {
+                font-size: 14px; /* Slight scale down */
+            }
+
+            .footer {
+                padding: 10px 12px;
+            }
+
+            .action-btn {
+                font-size: 12px;
+                padding: 8px 4px;
+                gap: 6px;
+            }
+            
+            .action-btn svg {
+                width: 16px;
+                height: 16px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="post-card">
+        <header class="header">
+            <div class="user-meta">
+                <div class="avatar-container">
+                    <img src="IMG_20250814_212051_229(1).jpg" alt="Abhinav Raj">
+                </div>
+                <div class="identity">
+                    <h1>Abhinav Raj</h1>
+                    <p>Just a 17-Year-Old Figuring out AI & Tech</p>
+                    <span>9h • Public</span>
+                </div>
+            </div>
+            <img src="image_2210ec.png" class="brand-logo" alt="Branding">
+        </header>
+
+        <section class="content">
+            <div class="body-text">
+                Closing out the year by shipping something I've been working on for months:
+                
+                <span class="highlight-text">
+                    Data For Sale<br>
+                    <span style="font-weight: 300; font-size: 13px; color: var(--text-secondary);">-A digital research paper on how our online lives are turned into profit.</span>
+                </span>
+
+                We think apps are free.<br>
+                But the real currency is our attention, behavior, and privacy.
+
+                <div style="margin-top: 16px;">I spent months digging into:</div>
+                <ul class="list-items">
+                    <li>How our data becomes money</li>
+                    <li>How algorithms shape decisions</li>
+                    <li>Why privacy is disappearing fast</li>
+                </ul>
+
+                If you've ever wondered what tech really knows about you...<br>
+                this might open your eyes.
+
+                <div style="margin-top: 20px;">
+                    Read the full experience: <br>
+                    <a href="#" class="cta-link">abhnv.in/research/paper</a>
+                </div>
+            </div>
+        </section>
+
+        <div class="media-container">
+            <div class="play-button">
+                <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+            </div>
+            <!-- Monolithic dark placeholder to match the aesthetic -->
+            <img src="https://images.unsplash.com/photo-1639762681485-074b7f938ba0?q=80&w=2832&auto=format&fit=crop" alt="Data Visualization">
+        </div>
+
+        <footer class="footer">
+            <div class="engagement-stats">
+                <div class="reactions">
+                    <span class="reaction-icon" style="background: #1d4ed8; z-index: 3;">👍</span>
+                    <span class="reaction-icon" style="background: #059669; z-index: 2; margin-left: -4px;">👏</span>
+                    <span class="reaction-icon" style="background: #d97706; z-index: 1; margin-left: -4px;">💡</span>
+                    <span class="count-text">7</span>
+                </div>
+                <div class="count-text">4 Comments</div>
+            </div>
+            <div class="action-bar">
+                <button class="action-btn">
+                    <svg viewBox="0 0 24 24"><path d="M14 9l-6 12m-2-7l14-7-4 13-4-4-6 2V7z"/></svg>
+                    Like
+                </button>
+                <button class="action-btn">
+                    <svg viewBox="0 0 24 24"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
+                    Comment
+                </button>
+                <button class="action-btn">
+                    <svg viewBox="0 0 24 24"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>
+                    Share
+                </button>
+            </div>
+        </footer>
+    </div>
+
+</body>
+</html>
