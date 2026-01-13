@@ -28,10 +28,14 @@
             <!-- Text now inside the video container -->
             <h1 id="instruction">OPEN YOUR MOUTH</h1>
 
-            <!-- Hidden camera input required by MediaPipe -->
-            <video class="input_video"></video>
+            <!-- Camera input (now visible as background) -->
+            <video class="input_video" autoplay playsinline muted></video>
             <!-- The reward video -->
             <video id="rewardVideo" src="rigby.mp4" loop playsinline></video>
+
+            <!-- The GIF overlays -->
+            <img id="eyesGif" src="closed_eyes.gif" class="overlay-media">
+            <img id="tongueGif" src="tongue.gif" class="overlay-media">
         </div>
     </div>
 

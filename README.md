@@ -45,6 +45,20 @@ You can edit the parameters at the top of the file:
     SUSTAIN_FRAMES   — gesture must last this many frames  
 
 -----------------------------------------------------------
+MODES
+-----------------------------------------------------------
+# FreakDetector
+
+Two versions available:
+1. **Rigby Mode**: `rigby.html` (Mouth Open -> Rigby Video)
+2. **Gestures Mode**: `gestures.html` (Tongue Out/Closed Eyes -> GIFs)
+
+Files:
+- `rigby.html` + `script_rigby.js`
+- `gestures.html` + `script_gestures.js`
+- `style.css` (Shared)
+
+-----------------------------------------------------------
 LOGIC OVERVIEW
 -----------------------------------------------------------
 - Facial landmarks are read from MediaPipe in each frame.

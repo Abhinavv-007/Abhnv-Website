@@ -90,27 +90,22 @@ body {
 }
 
 .video-container {
-    /* Portrait mode 9:16 ratio */
-    width: 90vw;
-    max-width: 400px;
-    /* Base size for desktop */
+    position: relative;
+    width: 100%;
+    /* Added for better filling */
+    max-width: 500px;
+    /* Increased for larger view */
     aspect-ratio: 9/16;
     height: auto;
     max-height: 85vh;
     /* Prevent it from being too tall on small screens */
 
-    position: relative;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-
     /* Frame Styling */
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    border: 8px solid #333;
+    /* Updated border */
     border-radius: 20px;
     background: #000;
-    box-shadow:
-        0 0 0 1px rgba(255, 255, 255, 0.1),
-        0 20px 60px rgba(0, 0, 0, 0.8);
+    0 20px 60px rgba(0, 0, 0, 0.8);
     overflow: hidden;
 
     /* Glassmorphism Frame Effect */
@@ -167,19 +162,39 @@ body {
 }
 
 .input_video {
-    display: none;
+    display: block;
+    /* Show camera */
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    z-index: 1;
+    /* Behind overlays but visible */
+    transform: scaleX(-1);
+    /* Mirror effect */
 }
 
-#rewardVideo {
+#rewardVideo,
+.overlay-media {
+    position: absolute;
     width: 100%;
     height: 100%;
     object-fit: cover;
     opacity: 0;
-    transition: opacity 0.3s ease;
+    transition: opacity 0.2s ease;
+    z-index: 5;
+    /* On top of camera */
 }
 
-#rewardVideo.active {
+#rewardVideo.active,
+.overlay-media.active {
     opacity: 1;
+}
+
+#instruction {
+    /* ... previous styles ... */
+    z-index: 100;
+    /* Always on top */
 }
 
 .hidden {

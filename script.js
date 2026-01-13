@@ -1,66 +1,94 @@
 const videoElement = document.getElementsByClassName('input_video')[0];
 const rewardVideo = document.getElementById('rewardVideo');
+const eyesGif = document.getElementById('eyesGif');
+const tongueGif = document.getElementById('tongueGif');
 const instructionText = document.getElementById('instruction');
 
-// Constants for mouth detection
-// Upper lip bottom: 13
-// Lower lip top: 14
-// We can also use face height to normalize.
-const MOUNT_OPEN_THRESHOLD = 0.05; // Adjust based on testing
-let isMouthOpen = false;
+// Thresholds
+const MOUTH_OPEN_THRESHOLD = 0.05;
+const EYE_CLOSED_THRESHOLD = 0.015; // Slightly increased for better sensitivity
+const TONGUE_THRESHOLD = 0.04; // Lowered from 0.08, but higher than 0.02
+
+// State
+let currentState = 'NEUTRAL'; // NEUTRAL, MOUTH_OPEN, EYES_CLOSED, TONGUE_OUT
 
 function onResults(results) {
   if (results.multiFaceLandmarks && results.multiFaceLandmarks.length > 0) {
     const landmarks = results.multiFaceLandmarks[0];
-    
-    // Keypoints
-    const upperLipBot = landmarks[13];
-    const lowerLipTop = landmarks[14];
-    
-    // Calculate distance
-    const distance = Math.abs(upperLipBot.y - lowerLipTop.y);
-    
-    // Check if mouth is open
-    // Ideally we normalize this by face height (e.g., forehead to chin) to handle distance from camera
-    // But for a simple "freak detector" close-up, raw Y diff might suffice or a simple normalization.
-    // Let's normalize by face height just to be safe.
+
+    // 1. Eye Closure Detection
     const faceTop = landmarks[10];
     const faceBot = landmarks[152];
     const faceHeight = Math.abs(faceTop.y - faceBot.y);
-    
-    const normalizedOpen = distance / faceHeight;
 
-    if (normalizedOpen > MOUNT_OPEN_THRESHOLD) {
-        if (!isMouthOpen) {
-            isMouthOpen = true;
-            handleMouthStateChange(true);
-        }
-    } else {
-        if (isMouthOpen) {
-            isMouthOpen = false;
-            handleMouthStateChange(false);
-        }
+    const leftEyeH = Math.abs(landmarks[159].y - landmarks[145].y) / faceHeight;
+    const rightEyeH = Math.abs(landmarks[386].y - landmarks[374].y) / faceHeight;
+    const avgEyeOpen = (leftEyeH + rightEyeH) / 2;
+    // Eyes are closed if open distance is very small
+    const areEyesClosed = avgEyeOpen < EYE_CLOSED_THRESHOLD;
+
+    // 2. Tongue Detection
+    // Python script used landmark 16 - landmark 14 > 0.01
+    // We normalize by faceHeight.
+    // If tongue is always triggering, maybe 16 is naturally lower than 14?
+    // Let's print debug values.
+    const lipDiff = (landmarks[16].y - landmarks[14].y) / faceHeight;
+    const isTongueOut = lipDiff > TONGUE_THRESHOLD;
+
+    // Debugging current values
+    console.log(`LipDiff: ${lipDiff.toFixed(4)} (Thresh: ${TONGUE_THRESHOLD}), EyeOpen: ${avgEyeOpen.toFixed(4)}`);
+
+    // 3. Mouth Open Detection
+    const upperLipBot = landmarks[13];
+    const lowerLipTop = landmarks[14];
+    const mouthDist = Math.abs(upperLipBot.y - lowerLipTop.y) / faceHeight;
+    const isMouthOpen = mouthDist > MOUTH_OPEN_THRESHOLD;
+
+    // Priority Logic: Tongue > Eyes > Mouth > Neutral
+    let newState = 'NEUTRAL';
+
+    if (isTongueOut) {
+      newState = 'TONGUE_OUT';
+    } else if (areEyesClosed) {
+      newState = 'EYES_CLOSED';
+    } else if (isMouthOpen) {
+      newState = 'MOUTH_OPEN';
+    }
+
+    if (newState !== currentState) {
+      currentState = newState;
+      updateUI(currentState);
     }
   }
 }
 
-function handleMouthStateChange(isOpen) {
-    if (isOpen) {
-        // Mouth opened
-        instructionText.classList.add('hidden');
-        rewardVideo.classList.add('active');
-        rewardVideo.play();
-    } else {
-        // Mouth closed
-        instructionText.classList.remove('hidden');
-        rewardVideo.classList.remove('active');
-        rewardVideo.pause();
-    }
+function updateUI(state) {
+  // Reset all
+  rewardVideo.classList.remove('active');
+  eyesGif.classList.remove('active');
+  tongueGif.classList.remove('active');
+  rewardVideo.pause();
+  instructionText.classList.remove('hidden');
+
+  // Activate specific
+  if (state === 'MOUTH_OPEN') {
+    rewardVideo.classList.add('active');
+    rewardVideo.play();
+    instructionText.classList.add('hidden');
+  } else if (state === 'EYES_CLOSED') {
+    eyesGif.classList.add('active');
+    instructionText.classList.add('hidden');
+  } else if (state === 'TONGUE_OUT') {
+    tongueGif.classList.add('active');
+    instructionText.classList.add('hidden');
+  }
 }
 
-const faceMesh = new FaceMesh({locateFile: (file) => {
-  return `https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/${file}`;
-}});
+const faceMesh = new FaceMesh({
+  locateFile: (file) => {
+    return `https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/${file}`;
+  }
+});
 
 faceMesh.setOptions({
   maxNumFaces: 1,
@@ -73,7 +101,7 @@ faceMesh.onResults(onResults);
 
 const camera = new Camera(videoElement, {
   onFrame: async () => {
-    await faceMesh.send({image: videoElement});
+    await faceMesh.send({ image: videoElement });
   },
   width: 1280,
   height: 720
