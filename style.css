@@ -1,0 +1,188 @@
+body {
+    margin: 0;
+    padding: 0;
+    width: 100vw;
+    height: 100vh;
+    background-color: #050505;
+    color: #fff;
+    font-family: 'Inter', sans-serif;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    overflow: hidden;
+    position: relative;
+}
+
+/* Background Animation */
+.background-animation {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 0;
+    overflow: hidden;
+    background: radial-gradient(circle at 50% 50%, #1a1a1a 0%, #000 100%);
+}
+
+.orb {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(80px);
+    opacity: 0.6;
+    animation: float 10s infinite ease-in-out;
+}
+
+.orb:nth-child(1) {
+    width: 400px;
+    height: 400px;
+    background: #4a00e0;
+    /* Purple */
+    top: -100px;
+    left: -100px;
+    animation-duration: 12s;
+}
+
+.orb:nth-child(2) {
+    width: 300px;
+    height: 300px;
+    background: #8e2de2;
+    /* Violet */
+    bottom: -50px;
+    right: -50px;
+    animation-duration: 15s;
+    animation-delay: -2s;
+}
+
+.orb:nth-child(3) {
+    width: 250px;
+    height: 250px;
+    background: #00b09b;
+    /* Teal */
+    top: 50%;
+    left: 60%;
+    animation-duration: 18s;
+    animation-delay: -5s;
+}
+
+@keyframes float {
+
+    0%,
+    100% {
+        transform: translate(0, 0);
+    }
+
+    50% {
+        transform: translate(30px, -30px);
+    }
+}
+
+.container {
+    text-align: center;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    position: relative;
+    z-index: 10;
+}
+
+.video-container {
+    /* Portrait mode 9:16 ratio */
+    width: 90vw;
+    max-width: 400px;
+    /* Base size for desktop */
+    aspect-ratio: 9/16;
+    height: auto;
+    max-height: 85vh;
+    /* Prevent it from being too tall on small screens */
+
+    position: relative;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+
+    /* Frame Styling */
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 20px;
+    background: #000;
+    box-shadow:
+        0 0 0 1px rgba(255, 255, 255, 0.1),
+        0 20px 60px rgba(0, 0, 0, 0.8);
+    overflow: hidden;
+
+    /* Glassmorphism Frame Effect */
+    backdrop-filter: blur(20px);
+}
+
+/* Tablet Responsiveness */
+@media (min-width: 768px) and (max-width: 1024px) {
+    .video-container {
+        max-width: 360px;
+        /* Slightly smaller on tablet to fit UI comfortably */
+    }
+}
+
+/* Mobile Responsiveness */
+@media (max-width: 767px) {
+    .video-container {
+        width: 95vw;
+        max-height: 80vh;
+        /* Leave room for browser bars */
+        border-width: 0;
+        /* Cleaner look on mobile */
+        border-radius: 15px;
+    }
+}
+
+#instruction {
+    font-size: 2.5rem;
+    /* responsive base size */
+    font-weight: 900;
+    text-transform: uppercase;
+    z-index: 100;
+    /* Ensure it is on top */
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+    text-shadow: 0 0 30px rgba(0, 0, 0, 1);
+    transition: all 0.3s ease;
+    width: 90%;
+    /* Fit inside container padding */
+    line-height: 1.1;
+    color: #fff;
+    /* Removed mix-blend-mode as it made text invisible on black background */
+    opacity: 1;
+}
+
+/* Make text smaller on mobile inside the box */
+@media (max-width: 480px) {
+    #instruction {
+        font-size: 2rem;
+    }
+}
+
+.input_video {
+    display: none;
+}
+
+#rewardVideo {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+#rewardVideo.active {
+    opacity: 1;
+}
+
+.hidden {
+    opacity: 0 !important;
+    transform: translate(-50%, -60%) scale(0.9);
+}
