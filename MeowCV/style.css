@@ -26,13 +26,16 @@ body {
 
 #app-container {
     position: relative;
-    width: 100%;
-    min-height: 100vh;
+    width: 125%;
+    /* 100% / 0.8 to fill width after scaling */
+    min-height: 125vh;
     display: flex;
     flex-direction: column;
     align-items: center;
     padding-bottom: 50px;
     /* Space for scroll */
+    transform: scale(0.8);
+    transform-origin: top center;
 }
 
 /* ... skipped ... */
