@@ -38,14 +38,14 @@ body {
 /* ... skipped ... */
 
 .window-human {
-    width: 550px;
-    height: 733px;
-    /* Matched to Cat Reaction Size */
+    width: 412px;
+    height: 550px;
+    /* Scaled down portrait size */
 }
 
 .window-cat {
-    width: 550px;
-    height: 733px;
+    width: 412px;
+    height: 550px;
 }
 
 /* --- Scanlines & Effects --- */
