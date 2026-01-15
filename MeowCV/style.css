@@ -117,11 +117,20 @@ h1.glitch-text {
 }
 
 .mac-window.large {
-    width: 480px;
-    height: 360px;
-    /* 4:3 Aspect roughly */
+    /* Base class for large comparison windows */
     display: flex;
     flex-direction: column;
+}
+
+.window-human {
+    width: 640px;
+    height: 480px;
+}
+
+.window-cat {
+    width: 550px;
+    height: 733px;
+    /* ~3:4 Aspect Ratio to match cat images */
 }
 
 .mac-header {
