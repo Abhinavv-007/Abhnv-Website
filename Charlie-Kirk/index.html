@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Charlie Kirkification</title>
+    <link rel="stylesheet" href="style.css">
+    <!-- MediaPipe Dependencies -->
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/control_utils/control_utils.js"
+        crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js"
+        crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/face_mesh.js" crossorigin="anonymous"></script>
+</head>
+
+<body>
+    <div id="container">
+        <!-- Start overlay to handle user interaction for audio -->
+        <div id="start-overlay">
+            <h1>Charlie Kirkification</h1>
+            <p>A CV productivity tool that plays Charlie Kirk whenever you doomscroll.</p>
+            <button id="start-btn">Start Doomscroll Detector</button>
+        </div>
+
+        <div id="debug-info"
+            style="position: absolute; top: 10px; left: 10px; color: yellow; z-index: 2000; font-family: monospace; background: rgba(0,0,0,0.5); padding: 5px;">
+            Waiting for face...
+        </div>
+
+        <video class="input_video"></video>
+        <canvas class="output_canvas"></canvas>
+
+        <div id="spam-container"></div>
+    </div>
+
+    <!-- Audio Element -->
+    <audio id="charlie-audio" loop>
+        <source src="assets/we-are-charlie-kirk-song.mp3" type="audio/mpeg">
+    </audio>
+
+    <script src="script.js"></script>
+</body>
+
+</html>
