@@ -10,8 +10,8 @@ const expressionLabel = document.getElementById('expression-label');
 // Note: JS FaceMesh coordinates might scale differently depending on usage, 
 // but since we normalized logic in Python (landmark.y differences), it should be similar raw.
 // However, Python used normalized coordinates directly, so let's stick to that.
-const EYE_OPENING_THRESHOLD = 0.025;
-const MOUTH_OPEN_THRESHOLD = 0.05; // Slightly adjusted for JS sensitivity
+const EYE_OPENING_THRESHOLD = 0.035; // Increased for "wider" eyes requirement
+const MOUTH_OPEN_THRESHOLD = 0.05;
 const SQUINTING_THRESHOLD = 0.018;
 
 function onResults(results) {
