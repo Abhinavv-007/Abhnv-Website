@@ -4,8 +4,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Charlie Kirkification</title>
+    <title>Charlie Kirkification | Anti-Doomscroll System</title>
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Space+Grotesk:wght@500;700&display=swap"
+        rel="stylesheet">
+
     <link rel="stylesheet" href="style.css">
+
     <!-- MediaPipe Dependencies -->
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/control_utils/control_utils.js"
@@ -16,21 +25,45 @@
 </head>
 
 <body>
-    <div id="container">
-        <!-- Start overlay to handle user interaction for audio -->
-        <div id="start-overlay">
-            <h1>Charlie Kirkification</h1>
-            <p>A CV productivity tool that plays Charlie Kirk whenever you doomscroll.</p>
-            <button id="start-btn">Start Doomscroll Detector</button>
+
+    <div id="app-container">
+
+        <!-- Scanline Overlay for aesthetics -->
+        <div class="scanlines"></div>
+
+        <!-- Start Screen / Overlay -->
+        <div id="start-overlay" class="overlay active">
+            <div class="glass-card">
+                <div class="badge">SYSTEM READY</div>
+                <h1 class="glitch-text" data-text="Charlie Kirkification">Charlie Kirkification</h1>
+                <p class="subtitle">Advanced Computer Vision Anti-Doomscroll Defense.</p>
+                <p class="description">
+                    This system tracks your eye movements in real-time.
+                    <br>Looking down at your phone triggers the <span class="highlight">Kirk Protocol</span>.
+                </p>
+                <button id="start-btn" class="cyber-btn">
+                    <span class="btn-text">INITIALIZE SURVEILLANCE</span>
+                    <span class="btn-glitch"></span>
+                </button>
+            </div>
         </div>
 
-        <div id="debug-info"
-            style="position: absolute; top: 10px; left: 10px; color: yellow; z-index: 2000; font-family: monospace; background: rgba(0,0,0,0.5); padding: 5px;">
-            Waiting for face...
-        </div>
+        <!-- Main Interface -->
+        <div class="video-wrapper">
+            <video class="input_video"></video>
+            <canvas class="output_canvas"></canvas>
 
-        <video class="input_video"></video>
-        <canvas class="output_canvas"></canvas>
+            <!-- Debug Info in a cool HUD -->
+            <div id="hud-display">
+                <div class="hud-row">
+                    <span class="hud-label">STATUS</span>
+                    <span id="system-status" class="hud-value blink">STANDBY</span>
+                </div>
+                <div id="debug-info" class="hud-console">
+                    Initializing core systems...
+                </div>
+            </div>
+        </div>
 
         <div id="spam-container"></div>
     </div>

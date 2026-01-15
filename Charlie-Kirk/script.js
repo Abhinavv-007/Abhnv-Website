@@ -78,10 +78,20 @@ function onResults(results) {
                 canvasCtx.fill();
             };
 
-            // Debug Text
+            // Strict Focus / Not Staring at Screen Logic
+            // Center is roughly 0.5. 
+            // Looking Down > 0.65
+            // Looking Up < 0.35
+            const LOWER_BOUND = 0.35;
+            const UPPER_BOUND = 0.65;
+            const TIMER_DURATION = 500; // 0.5 seconds for faster testing
+
+            // Debug Text & HUD
             const debugDiv = document.getElementById('debug-info');
-            debugDiv.style.color = 'yellow';
-            debugDiv.innerText = `Smoothed Ratio: ${smoothedRatio.toFixed(2)}\nSafe Range: ${LOWER_BOUND}-${UPPER_BOUND}`;
+            const statusLabel = document.getElementById('system-status');
+
+            // Format debug info
+            debugDiv.innerText = `>> TELEMETRY\n   L: ${smoothedRatio.toFixed(3)}\n   R: ${smoothedRatio.toFixed(3)}\n   ZONE: [${LOWER_BOUND}-${UPPER_BOUND}]`;
 
             // Draw points for verification
             drawPoint(lTop, 'cyan');
@@ -94,12 +104,15 @@ function onResults(results) {
             const current = Date.now();
 
             // Check if OUTSIDE safe range (Not Staring at Screen)
-            // Using the smoothed average for stability
             const isLookingAway = (smoothedRatio < LOWER_BOUND || smoothedRatio > UPPER_BOUND);
 
             if (isLookingAway) {
-                debugDiv.style.color = 'red';
-                debugDiv.innerText += "\nDISTRACTION DETECTED!";
+                statusLabel.innerText = "DISTRACTION DETECTED";
+                statusLabel.style.color = "var(--primary)";
+                statusLabel.classList.remove('blink');
+
+                // Add urgent text to console
+                debugDiv.innerText += "\n>> ALERT: FOCUS LOST";
 
                 if (timerStarted === null) {
                     timerStarted = current;
@@ -111,8 +124,12 @@ function onResults(results) {
                     }
                 }
             } else {
-                debugDiv.style.color = '#0f0'; // Green
-                debugDiv.innerText += "\nEYES ON SCREEN";
+                statusLabel.innerText = "MONITORING ACTIVE";
+                statusLabel.style.color = "var(--secondary)";
+                statusLabel.classList.add('blink');
+
+                debugDiv.innerText += "\n>> SYSTEM OPTIMAL";
+
                 timerStarted = null;
                 if (playing) {
                     stopSpam();
