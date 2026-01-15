@@ -167,18 +167,53 @@ function stopSpam() {
 }
 
 function spawnImage(src) {
+    // Mac Window Container
+    const windowDiv = document.createElement('div');
+    windowDiv.className = 'mac-window';
+
+    // Header (Title Bar)
+    const header = document.createElement('div');
+    header.className = 'mac-header';
+
+    // Traffic Lights
+    const dots = document.createElement('div');
+    dots.className = 'mac-dots';
+
+    const red = document.createElement('span'); red.className = 'mac-dot red';
+    const yellow = document.createElement('span'); yellow.className = 'mac-dot yellow';
+    const green = document.createElement('span'); green.className = 'mac-dot green';
+
+    dots.appendChild(red);
+    dots.appendChild(yellow);
+    dots.appendChild(green);
+
+    // Title
+    const title = document.createElement('span');
+    title.className = 'mac-title';
+    title.innerText = 'charlie_kirk_alert.exe';
+
+    header.appendChild(dots);
+    header.appendChild(title);
+
+    // Content (Image)
+    const content = document.createElement('div');
+    content.className = 'mac-content';
+
     const img = document.createElement('img');
     img.src = src;
-    img.className = 'spam-image';
 
-    // Random position
-    const x = Math.random() * (window.innerWidth - 200); // minus width roughly
-    const y = Math.random() * (window.innerHeight - 200);
+    content.appendChild(img);
+    windowDiv.appendChild(header);
+    windowDiv.appendChild(content);
 
-    img.style.left = `${x}px`;
-    img.style.top = `${y}px`;
+    // Random Position
+    const x = Math.random() * (window.innerWidth - 300);
+    const y = Math.random() * (window.innerHeight - 250);
 
-    spamContainer.appendChild(img);
+    windowDiv.style.left = `${x}px`;
+    windowDiv.style.top = `${y}px`;
+
+    spamContainer.appendChild(windowDiv);
 }
 
 const faceMesh = new FaceMesh({

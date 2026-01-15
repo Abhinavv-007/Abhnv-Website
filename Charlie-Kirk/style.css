@@ -215,7 +215,7 @@ h1.glitch-text {
     margin-top: 5px;
 }
 
-/* --- Spam --- */
+/* --- Mac Window Spam --- */
 #spam-container {
     position: absolute;
     top: 0;
@@ -226,13 +226,75 @@ h1.glitch-text {
     z-index: 800;
 }
 
-.spam-image {
+.mac-window {
     position: absolute;
-    border: 2px solid var(--primary);
-    box-shadow: 0 0 20px rgba(255, 62, 62, 0.5);
-    max-width: 300px;
-    width: 30vw;
+    width: 300px;
+    background: #1e1e1e;
+    /* Dark Finder color */
+    border-radius: 8px;
+    box-shadow: 0 15px 40px rgba(0, 0, 0, 0.6);
+    overflow: hidden;
     animation: popIn 0.1s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.mac-header {
+    height: 28px;
+    background: linear-gradient(to bottom, #3a3a3a, #2b2b2b);
+    display: flex;
+    align-items: center;
+    padding: 0 10px;
+    border-bottom: 1px solid #111;
+    position: relative;
+    user-select: none;
+}
+
+.mac-dots {
+    display: flex;
+    gap: 6px;
+}
+
+.mac-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+}
+
+.mac-dot.red {
+    background: #ff5f56;
+    border: 1px solid #e0443e;
+}
+
+.mac-dot.yellow {
+    background: #ffbd2e;
+    border: 1px solid #dea123;
+}
+
+.mac-dot.green {
+    background: #27c93f;
+    border: 1px solid #1aab29;
+}
+
+.mac-title {
+    flex-grow: 1;
+    text-align: center;
+    font-size: 12px;
+    color: #aeaeae;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    margin-right: 48px;
+    /* Offset the dots width to center */
+}
+
+.mac-content {
+    background: #000;
+    line-height: 0;
+    /* Removing bottom space */
+}
+
+.mac-content img {
+    width: 100%;
+    height: auto;
+    display: block;
 }
 
 /* --- Animations --- */
