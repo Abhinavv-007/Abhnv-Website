@@ -35,7 +35,7 @@ body {
     padding-bottom: 50px;
     /* Space for scroll */
     transform: scale(0.8);
-    transform-origin: top center;
+    transform-origin: top left;
 }
 
 /* ... skipped ... */
